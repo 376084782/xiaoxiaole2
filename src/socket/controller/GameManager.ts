@@ -169,14 +169,16 @@ export default class GameManager {
 
       clearTimeout(this.timer);
       // 游戏结束
-      socketManager.sendMsgByUidList(
-        this.uidList,
-        PROTOCLE.SERVER.GAME_FINISH,
-        {
-          userList: this.ctrRoom.getUserDataList(),
-          gameInfo: this.gameInfo
-        }
-      );
+      setTimeout(() => {
+        socketManager.sendMsgByUidList(
+          this.uidList,
+          PROTOCLE.SERVER.GAME_FINISH,
+          {
+            userList: this.ctrRoom.getUserDataList(),
+            gameInfo: this.gameInfo
+          }
+        );
+      }, 5000);
     }
   }
 
