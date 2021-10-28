@@ -133,7 +133,7 @@ export default class GameManager {
   }
   goNextTurn(listData) {
     clearTimeout(this.timer);
-    let timeNextStep = 2000 * 1000;
+    let timeNextStep = 20 * 1000;
     this.gameInfo.listData = listData;
     if (this.gameInfo.turn < 4) {
       this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
