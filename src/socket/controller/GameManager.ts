@@ -194,20 +194,26 @@ export default class GameManager {
           this.ctrRoom.leave(uid);
         });
       }
+
+      let uidWillSend = this.uidList.concat();
+      this.uidList = [];
       this.gameInfo.isFinish = true;
       this.ctrRoom.afterGameOver(this.gameInfo);
 
       clearTimeout(this.timer);
       // 游戏结束
-      setTimeout(() => {
-        socketManager.sendMsgByUidList(
-          this.uidList,
-          PROTOCLE.SERVER.GAME_FINISH,
-          {
-            gameInfo: this.gameInfo
-          }
-        );
-      }, 5000);
+      setTimeout(
+        () => {
+          socketManager.sendMsgByUidList(
+            uidWillSend,
+            PROTOCLE.SERVER.GAME_FINISH,
+            {
+              gameInfo: this.gameInfo
+            }
+          );
+        },
+        this.ctrRoom.isMatch ? 0 : 5000
+      );
     }
     this.ctrRoom && this.ctrRoom.checkAfterTurn();
   }

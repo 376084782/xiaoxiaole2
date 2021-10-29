@@ -239,7 +239,7 @@ export default class RoomManager {
   // 玩家离开
   leave(uid) {
     this.uidList = this.uidList.filter(uid1 => uid1 != uid);
-    if (!this.isStarted) {
+    if (!this.isStarted && !this.isMatch) {
       socketManager.sendMsgByUidList([uid], PROTOCLE.SERVER.SHOW_MATCH_ENTER, {
         flag: false
       });
