@@ -11,7 +11,7 @@ export default class RoomManager {
   isPublic = true;
   isStarted = false;
   // 存当前在游戏中的uid列表
-  uidList = [1, 2, 3, 4, 5, 6];
+  uidList = [];
   gameManagerList: GameManager[] = [];
   propMap = {};
   getGameCtr(uid) {
