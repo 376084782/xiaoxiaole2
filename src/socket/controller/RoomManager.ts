@@ -139,6 +139,9 @@ export default class RoomManager {
     this.propMap[uid] = propId;
     this.uidList.push(uid);
     if (this.isMatch) {
+      if (this.uidList.length == 0) {
+        this.uidList = [1, 2, 3, 4, 5, 6];
+      }
       this.waitingList = this.uidList;
       let userList = this.getUserDataList();
       socketManager.sendMsgByUidList([uid], PROTOCLE.SERVER.RANK_ENTER, {

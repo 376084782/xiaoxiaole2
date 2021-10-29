@@ -9,8 +9,8 @@ export default class GameManager {
   ctrRoom: RoomManager;
   gameInfo = {
     isFinish: false,
-    round: 4,
-    turn: 2,
+    round: 1,
+    turn: 1,
     turnList: [1, 1, 2, 2],
     skillNeed: 6,
     data1: {
