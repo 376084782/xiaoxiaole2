@@ -137,11 +137,11 @@ export default class RoomManager {
       return;
     }
     this.propMap[uid] = propId;
-    this.uidList.push(uid);
     if (this.isMatch) {
       if (this.uidList.length == 0) {
         this.uidList = [1, 2, 3, 4, 5, 6];
       }
+      this.uidList.push(uid);
       this.waitingList = this.uidList;
       let userList = this.getUserDataList();
       socketManager.sendMsgByUidList([uid], PROTOCLE.SERVER.RANK_ENTER, {
@@ -161,6 +161,7 @@ export default class RoomManager {
         this.doStartMatch();
       }
     } else {
+      this.uidList.push(uid);
       socketManager.sendMsgByUidList([uid], PROTOCLE.SERVER.SHOW_MATCH_ENTER, {
         flag: true,
         userInfo: socketManager.getUserInfoById(uid)
