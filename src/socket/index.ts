@@ -50,7 +50,8 @@ export default class socketManager {
   static getUserCtrById(uid) {
     if (!this.userMap[uid]) {
       this.userMap[uid] = new UserManager({
-        avatar: "",
+        avatar:
+          "https://img0.baidu.com/it/u=199023397,1701150760&fm=26&fmt=auto",
         nickname: "机器人" + uid,
         uid,
         sex: 1,
@@ -63,7 +64,7 @@ export default class socketManager {
   static getUserInfoById(uid) {
     if (!this.userMap[uid]) {
       this.userMap[uid] = new UserManager({
-        avatar: "",
+        avatar: "https://img0.baidu.com/it/u=199023397,1701150760&fm=26&fmt=auto",
         nickname: "机器人" + uid,
         uid,
         sex: 1,

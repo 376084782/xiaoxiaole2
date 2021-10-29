@@ -5,10 +5,12 @@ import _ = require("lodash");
 import RoomManager from "./RoomManager";
 
 export default class GameManager {
+  roundTime = 20;
   ctrRoom: RoomManager;
   gameInfo = {
-    round: 1,
-    turn: 1,
+    isFinish: false,
+    round: 4,
+    turn: 2,
     turnList: [1, 1, 2, 2],
     skillNeed: 6,
     data1: {
@@ -47,7 +49,7 @@ export default class GameManager {
       this.gameInfo.seatMap[uid] = seatList[i];
       let targetData =
         seatList[i] == 1 ? this.gameInfo.data1 : this.gameInfo.data2;
-      targetData.propId = this.ctrRoom.propMap[uid];
+      targetData.propId = this.ctrRoom.propMap[uid] || 1;
       targetData.gridType = Util.getRandomInt(1, 6);
 
       let userInfo = socketManager.getUserInfoById(uid);
@@ -55,7 +57,8 @@ export default class GameManager {
       targetData.uid = userInfo.uid;
       targetData.nickname = userInfo.nickname;
     });
-
+  }
+  doStart() {
     this.initBoard();
     let timeNextStep = 30 * 1000;
     this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
@@ -105,9 +108,8 @@ export default class GameManager {
   getCurrentColor() {
     return this.gameInfo.turnList[this.gameInfo.turn - 1];
   }
-  flagMoving = false;
   doMove(idx1, idx2, uid) {
-    if (this.flagMoving) {
+    if (this.gameInfo.isFinish) {
       return;
     }
     let color = this.gameInfo.seatMap[uid];
@@ -135,7 +137,6 @@ export default class GameManager {
       flagExtraMove: flagExtraMove
     });
     // 延迟一段时间用于播放移动动画
-    this.flagMoving = true;
     let timeAnimate = 0;
     listAction.forEach(({ action, data }) => {
       if (action == "exchange") {
@@ -149,7 +150,6 @@ export default class GameManager {
     });
     setTimeout(() => {
       this.goNextTurn(this.gameInfo.listData);
-      this.flagMoving = false;
     }, timeAnimate);
   }
   autoGoNextTurn(timeNextStep) {
@@ -160,7 +160,7 @@ export default class GameManager {
   }
   goNextTurn(listData) {
     clearTimeout(this.timer);
-    let timeNextStep = 200 * 1000;
+    let timeNextStep = this.roundTime * 1000;
     this.gameInfo.listData = listData;
     if (this.gameInfo.turn < 4) {
       this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
@@ -187,11 +187,14 @@ export default class GameManager {
       );
       this.autoGoNextTurn(timeNextStep);
     } else {
-      this.uidList.forEach(uid => {
-        let userCtr = socketManager.getUserCtrById(uid);
-        userCtr.inRoomId = 0;
-        this.ctrRoom.leave(uid);
-      });
+      if (!this.ctrRoom.isMatch) {
+        this.uidList.forEach(uid => {
+          let userCtr = socketManager.getUserCtrById(uid);
+          userCtr.inRoomId = 0;
+          this.ctrRoom.leave(uid);
+        });
+      }
+      this.gameInfo.isFinish = true;
       this.ctrRoom.afterGameOver(this.gameInfo);
 
       clearTimeout(this.timer);
@@ -206,6 +209,7 @@ export default class GameManager {
         );
       }, 5000);
     }
+    this.ctrRoom && this.ctrRoom.checkAfterTurn();
   }
 
   timer;
@@ -273,6 +277,9 @@ export default class GameManager {
     return listAction;
   }
   useProp(id, uid) {
+    if (this.gameInfo.isFinish) {
+      return;
+    }
     let listDel = [];
     switch (id) {
       case 1: {
@@ -342,7 +349,6 @@ export default class GameManager {
         });
 
         // 延迟一段时间用于播放移动动画
-        this.flagMoving = true;
         let timeAnimate = 4000;
         listAction.forEach(({ action, data }) => {
           if (action == "exchange") {
@@ -356,7 +362,6 @@ export default class GameManager {
         });
         setTimeout(() => {
           this.goNextTurn(this.gameInfo.listData);
-          this.flagMoving = false;
         }, timeAnimate);
 
         return { id, listAction };
