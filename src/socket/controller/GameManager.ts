@@ -64,6 +64,28 @@ export default class GameManager {
       this.goNextTurn(this.gameInfo.listData);
     });
   }
+
+  askChuizi(uid, idx) {
+    let color = this.gameInfo.seatMap[uid];
+    let colorCurrent = this.getCurrentColor();
+    if (color == colorCurrent) {
+      let dataTarget = color == 1 ? this.gameInfo.data1 : this.gameInfo.data2;
+      if (dataTarget.chuizi > 0) {
+        dataTarget.chuizi--;
+        let listDel = [idx];
+        let listAction = this.doDelByProp(listDel);
+        socketManager.sendMsgByUidList(
+          this.uidList,
+          PROTOCLE.SERVER.DO_CHUIZI,
+          {
+            idx,
+            crashList: listAction,
+            seat: color
+          }
+        );
+      }
+    }
+  }
   askShuffle(uid) {
     let color = this.gameInfo.seatMap[uid];
     let colorCurrent = this.getCurrentColor();
@@ -102,10 +124,15 @@ export default class GameManager {
   }
   doAfterAction(listAction, colorCurrent) {
     clearTimeout(this.timer);
+    let flagExtraMove = !!listAction.find(e => e.data && e.data.flagExtraMove);
+    if (flagExtraMove) {
+      this.gameInfo.turn--;
+    }
     socketManager.sendMsgByUidList(this.uidList, PROTOCLE.SERVER.MOVE, {
       crashList: listAction,
       gameInfo: this.gameInfo,
-      seat: colorCurrent
+      seat: colorCurrent,
+      flagExtraMove: flagExtraMove
     });
     // 延迟一段时间用于播放移动动画
     this.flagMoving = true;
@@ -133,7 +160,7 @@ export default class GameManager {
   }
   goNextTurn(listData) {
     clearTimeout(this.timer);
-    let timeNextStep = 20 * 1000;
+    let timeNextStep = 200 * 1000;
     this.gameInfo.listData = listData;
     if (this.gameInfo.turn < 4) {
       this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
@@ -165,7 +192,7 @@ export default class GameManager {
         userCtr.inRoomId = 0;
         this.ctrRoom.leave(uid);
       });
-      this.ctrRoom.isStarted = false;
+      this.ctrRoom.afterGameOver(this.gameInfo);
 
       clearTimeout(this.timer);
       // 游戏结束
@@ -174,7 +201,6 @@ export default class GameManager {
           this.uidList,
           PROTOCLE.SERVER.GAME_FINISH,
           {
-            userList: this.ctrRoom.getUserDataList(),
             gameInfo: this.gameInfo
           }
         );
@@ -261,15 +287,8 @@ export default class GameManager {
         listDel = this.useProp3();
         break;
       }
-      case 4: {
-        listDel = this.useProp4();
-        break;
-      }
       case 5: {
         listDel = this.useProp5();
-        break;
-      }
-      case 6: {
         break;
       }
     }
@@ -282,10 +301,42 @@ export default class GameManager {
       if (currentTargetData.skillPrg >= this.gameInfo.skillNeed) {
         currentTargetData.skillPrg = 0;
         clearTimeout(this.timer);
+        let extraData: any = {};
+        if (id == 4) {
+          // 帽子
+          // 随机塞三个道具,一个闪电，两个箭头
+        } else if (id == 6) {
+          // 油漆
+          // 随机6个变色
+          let listCanChangeIdxs = [];
+          let targetGridColor = currentTargetData.gridType;
+          this.gameInfo.listData.forEach((list, y) => {
+            list.forEach((grid, x) => {
+              if (grid < 100 && grid != targetGridColor) {
+                listCanChangeIdxs.push(this.xyToIdx(x, y));
+              }
+            });
+          });
+          listCanChangeIdxs = _.shuffle(listCanChangeIdxs);
+          let listChangeColor = listCanChangeIdxs.slice(0, 6);
+          listChangeColor.forEach(idx => {
+            this.changeGrid(idx, targetGridColor);
+          });
+          extraData.listChangeColor = listChangeColor;
+          extraData.targetColor = targetGridColor;
+          extraData.listData = this.gameInfo.listData;
+        }
 
         let listAction = this.doDelByProp(listDel);
+
+        let flagExtraMove = !!listAction.find(
+          e => e.data && e.data.flagExtraMove
+        );
+        if (flagExtraMove) {
+          this.gameInfo.turn--;
+        }
         socketManager.sendMsgByUidList(this.uidList, PROTOCLE.SERVER.USE_PROP, {
-          crashData: { id, color, listAction },
+          crashData: { id, color, listAction, extraData, flagExtraMove },
           gameInfo: this.gameInfo,
           seat: colorCurrent
         });
@@ -477,7 +528,8 @@ export default class GameManager {
       listWillChange,
       listWillDel,
       dataDelBySpecialGrid,
-      listFall
+      listFall,
+      flagExtraMove: !!res.find(e => e.flagExtraMove)
     };
   }
 
@@ -605,6 +657,7 @@ export default class GameManager {
   }
   checkMerge() {
     let map = [];
+    let flagExtraMove = false;
     this.gameInfo.listData.forEach((row, y) => {
       row.forEach((grid, x) => {
         let idx = this.xyToIdx(x, y);
@@ -618,17 +671,20 @@ export default class GameManager {
             let listChange = [];
 
             // 相连五个以上，生成炸弹
-            let flagMoreThan5 = this.isMoreThanInLine(5, listLinked);
+            let flagMoreThan5 = listLinked.length >= 5;
             if (flagMoreThan5) {
+              flagExtraMove = true;
               listChange.push({ idx, value: 300 + grid });
             } else {
               // 相连四个以上，生成箭头
               let flagMoreThan4X = this.isMoreThanInX(4, listLinked);
               if (flagMoreThan4X) {
+                flagExtraMove = true;
                 listChange.push({ idx, value: 200 + grid });
               } else {
                 let flagMoreThan4Y = this.isMoreThanInY(4, listLinked);
                 if (flagMoreThan4Y) {
+                  flagExtraMove = true;
                   listChange.push({ idx, value: 100 + grid });
                 }
               }
@@ -637,7 +693,8 @@ export default class GameManager {
             map.push({
               color: this.gameInfo.listData[y][x],
               list: listLinked,
-              listChange
+              listChange,
+              flagExtraMove
             });
           }
         }
