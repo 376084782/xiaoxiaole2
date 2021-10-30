@@ -12,7 +12,7 @@ export default class GameManager {
     round: 1,
     turn: 1,
     turnList: [1, 1, 2, 2],
-    skillNeed: 0,
+    skillNeed: 6,
     data1: {
       shuffle: 1,
       chuizi: 1,
@@ -100,7 +100,7 @@ export default class GameManager {
         let { listShuffle, listData } = this.doShuffle();
         socketManager.sendMsgByUidList(this.uidList, PROTOCLE.SERVER.SHUFFLE, {
           listShuffle,
-          listData,
+          gameInfo: this.gameInfo,
           seat: this.gameInfo.seatMap[uid]
         });
       }
@@ -534,6 +534,7 @@ export default class GameManager {
 
     let valsDeled = this.delGrids(listWillDel);
     let dataDelBySpecialGrid = this.checkSpecialGridDeleted();
+    valsDeled = valsDeled.concat(this.delGrids(dataDelBySpecialGrid.list));
     listWillDel = _.uniq(listWillDel.concat(dataDelBySpecialGrid.list));
 
     listWillChange.forEach(conf => {
@@ -874,7 +875,6 @@ export default class GameManager {
         }
       }
     });
-    this.delGrids(list);
     this.lastDelList = [];
     return { list, listAni };
   }
