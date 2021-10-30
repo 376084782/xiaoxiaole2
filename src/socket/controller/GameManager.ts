@@ -12,7 +12,7 @@ export default class GameManager {
     round: 1,
     turn: 1,
     turnList: [1, 1, 2, 2],
-    skillNeed: 6,
+    skillNeed: 0,
     data1: {
       shuffle: 1,
       chuizi: 1,
@@ -97,9 +97,10 @@ export default class GameManager {
       let dataTarget = color == 1 ? this.gameInfo.data1 : this.gameInfo.data2;
       if (dataTarget.shuffle > 0) {
         dataTarget.shuffle--;
-        let listShuffle = this.doShuffle();
+        let { listShuffle, listData } = this.doShuffle();
         socketManager.sendMsgByUidList(this.uidList, PROTOCLE.SERVER.SHUFFLE, {
           listShuffle,
+          listData,
           seat: this.gameInfo.seatMap[uid]
         });
       }
@@ -116,7 +117,7 @@ export default class GameManager {
     let colorCurrent = this.getCurrentColor();
     if (color == colorCurrent) {
       // 校验是否轮到当前颜色
-      let listAction = this.getMoveData(idx1, idx2);
+      let { listAction, flagNextTurn } = this.getMoveData(idx1, idx2);
       if (listAction.length == 0) {
         return;
       }
@@ -263,6 +264,7 @@ export default class GameManager {
   getMoveData(idx1, idx2) {
     let listAction = [];
     let resExchange = this.exchange(idx1, idx2);
+    let flagNextTurn = true;
     if (resExchange) {
       listAction.push({
         action: "exchange",
@@ -279,8 +281,16 @@ export default class GameManager {
           data: dataCrash
         });
       }
+      if (listAction.length == 1) {
+        flagNextTurn = false;
+        let resExchangeBack = this.exchange(idx1, idx2);
+        listAction.push({
+          action: "exchange",
+          data: resExchangeBack
+        });
+      }
     }
-    return listAction;
+    return { flagNextTurn, listAction };
   }
   useProp(id, uid) {
     if (this.gameInfo.isFinish) {
@@ -318,6 +328,26 @@ export default class GameManager {
         if (id == 4) {
           // 帽子
           // 随机塞三个道具,一个闪电，两个箭头
+          let listCanChangeIdxs = [];
+          this.gameInfo.listData.forEach((list, y) => {
+            list.forEach((grid, x) => {
+              if (grid < 100) {
+                listCanChangeIdxs.push(this.xyToIdx(x, y));
+              }
+            });
+          });
+          listCanChangeIdxs = _.shuffle(listCanChangeIdxs);
+          let listWillChange = listCanChangeIdxs.slice(0, 3);
+          let listTarget = [];
+          listTarget.push(400 + Util.getRandomInt(1, 6));
+          listTarget.push(100 + Util.getRandomInt(1, 6));
+          listTarget.push(200 + Util.getRandomInt(1, 6));
+          let listChange = [];
+          listWillChange.forEach((grid, i) => {
+            listChange.push([grid, listTarget[i]]);
+            this.changeGrid(grid, listTarget[i]);
+          });
+          extraData.listChange = listChange;
         } else if (id == 6) {
           // 油漆
           // 随机6个变色
@@ -677,10 +707,40 @@ export default class GameManager {
         });
         if (!list) {
           let listLinked = this.findLinkedList(idx);
-          let flagMoreThan3 = this.isMoreThanInLine(3, listLinked);
-          if (flagMoreThan3) {
-            let listChange = [];
 
+          let listXSameOver3 = listLinked.filter(grid1 => {
+            let xy1 = this.idxToXY(grid1);
+            return (
+              listLinked.filter(grid => {
+                let xy = this.idxToXY(grid);
+                return xy.y == xy1.y;
+              }).length >= 3
+            );
+          });
+          let listYSameOver3 = listLinked.filter(grid1 => {
+            let xy1 = this.idxToXY(grid1);
+            return (
+              listLinked.filter(grid => {
+                let xy = this.idxToXY(grid);
+                return xy.x == xy1.x;
+              }).length >= 3
+            );
+          });
+          let flagMoreThan3 = false;
+          // todo:效率略低，可以优化成根据终点位置横纵向查询
+          listLinked = [];
+          if (listXSameOver3.length > 0) {
+            flagMoreThan3 = true;
+            listLinked = listLinked.concat(listXSameOver3);
+          }
+          if (listYSameOver3.length > 0) {
+            listLinked = listLinked.concat(listYSameOver3);
+            flagMoreThan3 = true;
+          }
+          listLinked = _.uniq(listLinked);
+
+          if (flagMoreThan3 && listLinked.indexOf(idx) > -1) {
+            let listChange = [];
             // 相连五个以上，生成炸弹
             let flagMoreThan5 = listLinked.length >= 5;
             if (flagMoreThan5) {
@@ -743,19 +803,54 @@ export default class GameManager {
       let xy = this.idxToXY(data.idx);
       if (data.value > 100) {
         // 特殊道具，进行额外消除操作
-        if (data.value > 300) {
-          for (let y = 0; y < 7; y++) {
-            list.push(this.xyToIdx(xy.x, y));
-          }
-          for (let x = 0; x < 7; x++) {
-            list.push(this.xyToIdx(x, xy.y));
-          }
+        if (data.value > 400) {
+          // 选三个同色的进行消除
+          let color = data.value % 100;
+          let listCanDel = [];
+          this.gameInfo.listData.forEach((list, y) => {
+            list.forEach((grid, x) => {
+              if (grid == color) {
+                listCanDel.push(this.xyToIdx(x, y));
+              }
+            });
+          });
+          listCanDel = _.shuffle(listCanDel);
+          let listDel = listCanDel.slice(0, 3);
+          list = list.concat(listDel);
           listAni.push({
-            type: 100,
-            xy
+            type: 400,
+            xy,
+            listDel: listDel
+          });
+        } else if (data.value > 300) {
+          // 炸弹，辐射状消除 本行
+
+          let dirList = [
+            [0, 0],
+            [-1, 0],
+            [-2, 0],
+            [1, 0],
+            [2, 0],
+            [0, -1],
+            [-1, -1],
+            [1, -1],
+            [0, -2],
+            [0, 1],
+            [-1, 1],
+            [1, 1],
+            [0, 2]
+          ];
+          dirList.forEach(([dirX, dirY]) => {
+            if (
+              this.gameInfo.listData[xy.y + dirY] &&
+              this.gameInfo.listData[xy.x + dirX]
+            ) {
+              let idxTarget = this.xyToIdx(xy.x + dirX, xy.y + dirY);
+              list.push(idxTarget);
+            }
           });
           listAni.push({
-            type: 200,
+            type: 300,
             xy
           });
         } else if (data.value > 200) {
@@ -939,6 +1034,6 @@ export default class GameManager {
 
     // 赋值新棋盘
     this.gameInfo.listData = listNew;
-    return listShuffle;
+    return { listShuffle, listData: this.gameInfo.listData };
   }
 }

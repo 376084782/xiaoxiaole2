@@ -33,7 +33,8 @@ export default class Util {
   }
   static shuffle(arr) {
     return arr.sort(() => Math.random() - 0.5);
-  }static getRandomInt(min: number = 0, max: number = 1): number {
+  }
+  static getRandomInt(min: number = 0, max: number = 1): number {
     return Math.floor(Math.random() * (max - min) + min);
   }
 }
