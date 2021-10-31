@@ -81,6 +81,7 @@ export default class GameManager {
           this.uidList,
           PROTOCLE.SERVER.DO_CHUIZI,
           {
+            gameInfo: this.gameInfo,
             idx,
             crashList: listAction,
             seat: color
@@ -285,7 +286,7 @@ export default class GameManager {
         flagNextTurn = false;
         let resExchangeBack = this.exchange(idx1, idx2);
         listAction.push({
-          action: "exchange",
+          action: "exchange_back",
           data: resExchangeBack
         });
       }
@@ -296,10 +297,13 @@ export default class GameManager {
     if (this.gameInfo.isFinish) {
       return;
     }
+    let extraData: any = {};
     let listDel = [];
     switch (id) {
       case 1: {
-        listDel = this.useProp1();
+        let res = this.useProp1();
+        listDel = res.listDel;
+        extraData.idx = res.idx;
         break;
       }
       case 2: {
@@ -307,7 +311,8 @@ export default class GameManager {
         break;
       }
       case 3: {
-        listDel = this.useProp3();
+        let res = this.useProp3();
+        listDel = res.listDel;
         break;
       }
       case 5: {
@@ -324,7 +329,6 @@ export default class GameManager {
       if (currentTargetData.skillPrg >= this.gameInfo.skillNeed) {
         currentTargetData.skillPrg = 0;
         clearTimeout(this.timer);
-        let extraData: any = {};
         if (id == 4) {
           // 帽子
           // 随机塞三个道具,一个闪电，两个箭头
@@ -434,7 +438,7 @@ export default class GameManager {
 
   // 炸药
   useProp1() {
-    let x = Util.getRandomInt(1, 6);
+    let x = Util.getRandomInt(1, 3);
     let y = Util.getRandomInt(1, 6);
     let listDel = [];
     let dir = [
@@ -449,7 +453,7 @@ export default class GameManager {
       let idx = this.xyToIdx(xy.x, xy.y);
       listDel.push(idx);
     });
-    return listDel;
+    return { listDel, idx: this.xyToIdx(x, y) };
   }
   // 毒
   useProp2() {
@@ -481,24 +485,28 @@ export default class GameManager {
     let listDel = [];
     let listXY = [
       [3, 0],
+
       [3, 1],
       [2, 1],
       [4, 1],
+
       [3, 2],
       [2, 2],
       [4, 2],
       [1, 2],
       [5, 2],
+
       [3, 3],
       [2, 3],
       [4, 3],
+
       [3, 4]
     ];
     listXY.forEach(([x, y]) => {
       let idx = this.xyToIdx(x, y);
       listDel.push(idx);
     });
-    return listDel;
+    return { listDel };
   }
   // 帽子
   useProp4() {
