@@ -20,7 +20,6 @@ export default class RoomManager {
     );
   }
   checkAfterTurn() {
-    console.log("轮次", this.uidList);
     // 每轮更新一次游戏数据
     socketManager.sendMsgByUidList(this.uidList, PROTOCLE.SERVER.RANK_UPDATE, {
       rankInfo: this.getRankInfo()
@@ -34,7 +33,6 @@ export default class RoomManager {
     } else if (this.rankRound == 3) {
       return this.list3;
     } else {
-      console.log("?????", this.rankRound);
       return [];
     }
   }
@@ -49,16 +47,15 @@ export default class RoomManager {
           ? userGameData1.uid
           : userGameData2.uid;
       this.waitingList.push(uidWinner);
-      console.log(this.waitingList);
 
       // 检查当前轮次 是否所有队伍完成pk，完成了进入下一轮
       if (this.rankRound >= 3) {
         console.log("最后一场比赛");
         this.isStarted = false;
         this.uidList.forEach(uid => {
+          this.leave(uid);
           let ctrUser = socketManager.getUserCtrById(uid);
           ctrUser.inRoomId = 0;
-          this.leave(uid);
         });
         this.uidList = [];
       } else {

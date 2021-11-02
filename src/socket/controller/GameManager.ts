@@ -126,6 +126,27 @@ export default class GameManager {
     } else {
     }
   }
+  goNextAfterAction(listAction, isGoNext = true, delay = 0) {
+    clearTimeout(this.timer);
+    // 延迟一段时间用于播放移动动画
+    let timeAnimate = delay + 1;
+    listAction.forEach(({ action, data }) => {
+      if (action == "exchange") {
+        timeAnimate += 8 / 30;
+      } else if (action == "crash") {
+        let { listFall, listWillDel } = data;
+        if (listWillDel.length > 0) {
+          timeAnimate += 8 / 30;
+        }
+        if (listFall.length > 0) {
+          timeAnimate += 10 / 30;
+        }
+      }
+    });
+    setTimeout(() => {
+      this.goNextTurn(this.gameInfo.listData, isGoNext);
+    }, timeAnimate * 1000);
+  }
   doAfterAction(listAction, colorCurrent) {
     clearTimeout(this.timer);
     let flagExtraMove = !!listAction.find(e => e.data && e.data.flagExtraMove);
@@ -138,21 +159,7 @@ export default class GameManager {
       seat: colorCurrent,
       flagExtraMove: flagExtraMove
     });
-    // 延迟一段时间用于播放移动动画
-    let timeAnimate = 0;
-    listAction.forEach(({ action, data }) => {
-      if (action == "exchange") {
-        timeAnimate += 100;
-      } else if (action == "crash") {
-        let { listFall } = data;
-        if (listFall.length > 0) {
-          timeAnimate += 300;
-        }
-      }
-    });
-    setTimeout(() => {
-      this.goNextTurn(this.gameInfo.listData);
-    }, timeAnimate);
+    this.goNextAfterAction(listAction);
   }
   autoGoNextTurn(timeNextStep) {
     this.doAfter(timeNextStep, e => {
@@ -160,26 +167,21 @@ export default class GameManager {
       this.goNextTurn(this.gameInfo.listData);
     });
   }
-  goNextTurn(listData) {
+  goNextTurn(listData, isGoNext = true) {
     clearTimeout(this.timer);
     let timeNextStep = this.roundTime * 1000;
     this.gameInfo.listData = listData;
-    if (this.gameInfo.turn < 4) {
-      this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
-      this.gameInfo.turn++;
-      socketManager.sendMsgByUidList(
-        this.uidList,
-        PROTOCLE.SERVER.GAME_CHANGE_POWER,
-        {
-          gameInfo: this.gameInfo
+    if (this.gameInfo.turn < 4 || this.gameInfo.round < 4) {
+      if (isGoNext) {
+        if (this.gameInfo.turn < 4) {
+          this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
+          this.gameInfo.turn++;
+        } else if (this.gameInfo.round < 4) {
+          this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
+          this.gameInfo.turn = 1;
+          this.gameInfo.round++;
         }
-      );
-      this.autoGoNextTurn(timeNextStep);
-    } else if (this.gameInfo.round < 4) {
-      this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
-
-      this.gameInfo.turn = 1;
-      this.gameInfo.round++;
+      }
       socketManager.sendMsgByUidList(
         this.uidList,
         PROTOCLE.SERVER.GAME_CHANGE_POWER,
@@ -379,30 +381,21 @@ export default class GameManager {
         let flagExtraMove = !!listAction.find(
           e => e.data && e.data.flagExtraMove
         );
-        if (flagExtraMove) {
-          this.gameInfo.turn--;
-        }
         socketManager.sendMsgByUidList(this.uidList, PROTOCLE.SERVER.USE_PROP, {
           crashData: { id, color, listAction, extraData, flagExtraMove },
           gameInfo: this.gameInfo,
           seat: colorCurrent
         });
+        let map = {
+          1: 42 / 30,
+          2: 125 / 30,
+          3: 60 / 30,
+          4: 112 / 30,
+          5: 85 / 30,
+          6: 120 / 30
+        };
 
-        // 延迟一段时间用于播放移动动画
-        let timeAnimate = 4000;
-        listAction.forEach(({ action, data }) => {
-          if (action == "exchange") {
-            timeAnimate += 100;
-          } else if (action == "crash") {
-            let { listFall } = data;
-            if (listFall.length > 0) {
-              timeAnimate += 300;
-            }
-          }
-        });
-        setTimeout(() => {
-          this.goNextTurn(this.gameInfo.listData);
-        }, timeAnimate);
+        this.goNextAfterAction(listAction, false, map[id]);
 
         return { id, listAction };
       }
@@ -438,8 +431,8 @@ export default class GameManager {
 
   // 炸药
   useProp1() {
-    let x = Util.getRandomInt(1, 3);
-    let y = Util.getRandomInt(1, 6);
+    let x = Util.getRandomInt(1, 2);
+    let y = Util.getRandomInt(1, 5);
     let listDel = [];
     let dir = [
       [0, 0],
