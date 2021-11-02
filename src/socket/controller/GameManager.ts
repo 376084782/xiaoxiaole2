@@ -150,16 +150,13 @@ export default class GameManager {
   doAfterAction(listAction, colorCurrent) {
     clearTimeout(this.timer);
     let flagExtraMove = !!listAction.find(e => e.data && e.data.flagExtraMove);
-    if (flagExtraMove) {
-      this.gameInfo.turn--;
-    }
     socketManager.sendMsgByUidList(this.uidList, PROTOCLE.SERVER.MOVE, {
       crashList: listAction,
       gameInfo: this.gameInfo,
       seat: colorCurrent,
       flagExtraMove: flagExtraMove
     });
-    this.goNextAfterAction(listAction);
+    this.goNextAfterAction(listAction, !flagExtraMove);
   }
   autoGoNextTurn(timeNextStep) {
     this.doAfter(timeNextStep, e => {
