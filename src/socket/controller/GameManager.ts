@@ -60,7 +60,7 @@ export default class GameManager {
   }
   doStart() {
     let timeAni = (158 / 30) * 1000;
-    let timeNextStep = 60 * 1000 + timeAni;
+    let timeNextStep = this.roundTime * 1000 + timeAni;
     this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
     this.initBoard();
     clearInterval(this.timerChecker);
@@ -147,7 +147,7 @@ export default class GameManager {
   goNextAfterAction(listAction, isGoNext = true, delay = 0) {
     clearTimeout(this.timer);
     // 延迟一段时间用于播放移动动画
-    let timeAnimate = delay + 1;
+    let timeAnimate = delay;
     listAction.forEach(({ action, data }) => {
       if (action == "exchange") {
         timeAnimate += 8 / 30;
@@ -179,7 +179,10 @@ export default class GameManager {
   goNextTurn(listData, isGoNextTurn = true, isGoNextRound = false, delay = 0) {
     let timeNextStep = this.roundTime * 1000;
     this.gameInfo.listData = listData;
-    if (this.gameInfo.turn < 2 || this.gameInfo.round < 8) {
+    if (
+      this.gameInfo.round < 8 ||
+      (this.gameInfo.round == 8 && this.gameInfo.turn == 1)
+    ) {
       if (isGoNextRound) {
         this.gameInfo.turn = 1;
         this.gameInfo.round++;

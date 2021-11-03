@@ -39,6 +39,7 @@ export default class RoomManager {
   rankRound = 0;
   afterGameOver(gameInfo) {
     if (this.isMatch) {
+      this.checkAfterTurn();
       // 将胜利者塞到下一轮的待定组
       let userGameData1 = gameInfo.data1;
       let userGameData2 = gameInfo.data2;
@@ -47,6 +48,14 @@ export default class RoomManager {
           ? userGameData1.uid
           : userGameData2.uid;
       this.waitingList.push(uidWinner);
+      // 输的踢出
+      let uidLoser =
+        userGameData1.score <= userGameData2.score
+          ? userGameData1.uid
+          : userGameData2.uid;
+
+      let userCtr = socketManager.getUserCtrById(uidLoser);
+      userCtr.inRoomId = 0;
 
       // 检查当前轮次 是否所有队伍完成pk，完成了进入下一轮
       if (this.rankRound >= 3) {
@@ -58,6 +67,11 @@ export default class RoomManager {
           ctrUser.inRoomId = 0;
         });
         this.uidList = [];
+        this.rankRound = 0;
+        this.waitingList = [];
+        this.list1 = [];
+        this.list2 = [];
+        this.list3 = [];
       } else {
         let currentList = this.getTargetRankList();
         let flagOverAll =
