@@ -13,7 +13,7 @@ export default class socketManager {
     // 检查当前已存在的房间中 公开的，人未满的,未开始游戏的
     let list = this.aliveRoomList.filter((roomCtr: RoomManager) => {
       return (
-        roomCtr.isMatch == isMatch &&
+        roomCtr.isMatch === isMatch &&
         roomCtr.isPublic &&
         roomCtr.uidList.length < (isMatch ? MATCH_NEED : 2) &&
         !roomCtr.isStarted
@@ -22,8 +22,10 @@ export default class socketManager {
     if (list.length == 0) {
       let roomNew = new RoomManager(isMatch);
       this.aliveRoomList.push(roomNew);
+      return roomNew;
+    } else {
+      return list[0];
     }
-    return this.aliveRoomList[this.aliveRoomList.length - 1];
   }
   // 公共错误广播
   static sendErrByUidList(uidList: number[], protocle: string, data) {
@@ -64,7 +66,8 @@ export default class socketManager {
   static getUserInfoById(uid) {
     if (!this.userMap[uid]) {
       this.userMap[uid] = new UserManager({
-        avatar: "https://img0.baidu.com/it/u=199023397,1701150760&fm=26&fmt=auto",
+        avatar:
+          "https://img0.baidu.com/it/u=199023397,1701150760&fm=26&fmt=auto",
         nickname: "机器人" + uid,
         uid,
         sex: 1,
@@ -98,6 +101,9 @@ export default class socketManager {
     let userCtr = this.getUserCtrById(uid);
     let roomId = userCtr.inRoomId;
     let roomCtr = this.getRoomCtrByRoomId(roomId);
+    if (roomCtr) {
+      console.log(roomCtr.roomId, "roomId");
+    }
 
     switch (type) {
       case PROTOCLE.CLIENT.EXIT: {
@@ -135,10 +141,12 @@ export default class socketManager {
             this.sendErrByUidList([userCtr.uid], PROTOCLE.CLIENT.MATCH, {
               msg: "已经处于游戏中，无法匹配"
             });
+            console.warn("已经处于游戏中，无法匹配");
             return;
           }
           let targetRoom: RoomManager;
           targetRoom = this.getRoomCanJoin(isMatch);
+          console.log(targetRoom.roomId, targetRoom.isMatch, isMatch, "mmmmm");
 
           targetRoom.join(uid, data.propId);
           userCtr.inRoomId = targetRoom.roomId;
