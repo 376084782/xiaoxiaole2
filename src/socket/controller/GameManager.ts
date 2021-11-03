@@ -5,7 +5,7 @@ import _ = require("lodash");
 import RoomManager from "./RoomManager";
 
 export default class GameManager {
-  roundTime = 20;
+  roundTime = 60;
   ctrRoom: RoomManager;
   gameInfo = {
     isFinish: false,
@@ -59,13 +59,12 @@ export default class GameManager {
     });
   }
   doStart() {
-    this.initBoard();
-    let timeNextStep = 30 * 1000;
+    let timeAni = (158 / 30) * 1000;
+    let timeNextStep = 60 * 1000 + timeAni;
     this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
-    this.doAfter(timeNextStep, e => {
-      // 通知更新回合
-      this.goNextTurn(this.gameInfo.listData);
-    });
+    this.initBoard();
+    clearInterval(this.timerChecker);
+    this.timerChecker = setInterval(this.timeChecker.bind(this), 500);
   }
 
   askChuizi(uid, idx) {
@@ -108,10 +107,12 @@ export default class GameManager {
     }
   }
   getCurrentColor() {
-    return this.gameInfo.turnList[this.gameInfo.turn - 1];
+    let turn = this.gameInfo.turn + (this.gameInfo.round % 2 == 1 ? 0 : 2);
+    return this.gameInfo.turnList[turn - 1];
   }
   doMove(idx1, idx2, uid) {
     if (this.gameInfo.isFinish) {
+      this.goNextTurn(this.gameInfo.listData, false, false, 0);
       return;
     }
     let color = this.gameInfo.seatMap[uid];
@@ -119,11 +120,28 @@ export default class GameManager {
     if (color == colorCurrent) {
       // 校验是否轮到当前颜色
       let { listAction, flagNextTurn } = this.getMoveData(idx1, idx2);
-      if (listAction.length == 0) {
-        return;
+      let flagExtraMove = !!listAction.find(
+        e => e.data && e.data.flagExtraMove
+      );
+      if (flagNextTurn) {
+        socketManager.sendMsgByUidList(this.uidList, PROTOCLE.SERVER.MOVE, {
+          crashList: listAction,
+          gameInfo: this.gameInfo,
+          seat: colorCurrent,
+          flagExtraMove: flagExtraMove
+        });
+        this.goNextAfterAction(listAction, !flagExtraMove);
+      } else {
+        socketManager.sendMsgByUidList(this.uidList, PROTOCLE.SERVER.MOVE, {
+          crashList: listAction,
+          gameInfo: this.gameInfo,
+          seat: colorCurrent,
+          flagExtraMove: flagExtraMove
+        });
+        this.goNextTurn(this.gameInfo.listData, false, false, 0);
       }
-      this.doAfterAction(listAction, colorCurrent);
     } else {
+      this.goNextTurn(this.gameInfo.listData, false, false, 0);
     }
   }
   goNextAfterAction(listAction, isGoNext = true, delay = 0) {
@@ -143,82 +161,90 @@ export default class GameManager {
         }
       }
     });
-    setTimeout(() => {
-      this.goNextTurn(this.gameInfo.listData, isGoNext);
-    }, timeAnimate * 1000);
+    this.goNextTurn(
+      this.gameInfo.listData,
+      isGoNext,
+      false,
+      timeAnimate * 1000
+    );
   }
-  doAfterAction(listAction, colorCurrent) {
-    clearTimeout(this.timer);
-    let flagExtraMove = !!listAction.find(e => e.data && e.data.flagExtraMove);
-    socketManager.sendMsgByUidList(this.uidList, PROTOCLE.SERVER.MOVE, {
-      crashList: listAction,
-      gameInfo: this.gameInfo,
-      seat: colorCurrent,
-      flagExtraMove: flagExtraMove
-    });
-    this.goNextAfterAction(listAction, !flagExtraMove);
+  timerChecker;
+  timeChecker() {
+    let time = new Date().getTime();
+    if (time < this.gameInfo.timeNextStep) {
+      return;
+    }
+    this.goNextTurn(this.gameInfo.listData, false, true, 0);
   }
-  autoGoNextTurn(timeNextStep) {
-    this.doAfter(timeNextStep, e => {
-      // 通知更新回合
-      this.goNextTurn(this.gameInfo.listData);
-    });
-  }
-  goNextTurn(listData, isGoNext = true) {
-    clearTimeout(this.timer);
+  goNextTurn(listData, isGoNextTurn = true, isGoNextRound = false, delay = 0) {
     let timeNextStep = this.roundTime * 1000;
     this.gameInfo.listData = listData;
-    if (this.gameInfo.turn < 4 || this.gameInfo.round < 4) {
-      if (isGoNext) {
-        if (this.gameInfo.turn < 4) {
-          this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
+    if (this.gameInfo.turn < 2 || this.gameInfo.round < 8) {
+      if (isGoNextRound) {
+        this.gameInfo.turn = 1;
+        this.gameInfo.round++;
+        this.gameInfo.timeNextStep =
+          new Date().getTime() + delay + timeNextStep;
+      } else if (isGoNextTurn) {
+        if (this.gameInfo.turn < 2) {
           this.gameInfo.turn++;
-        } else if (this.gameInfo.round < 4) {
-          this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
+        } else {
+          this.gameInfo.timeNextStep =
+            new Date().getTime() + delay + timeNextStep;
           this.gameInfo.turn = 1;
           this.gameInfo.round++;
         }
+      } else {
+        this.gameInfo.timeNextStep += delay;
       }
-      socketManager.sendMsgByUidList(
-        this.uidList,
-        PROTOCLE.SERVER.GAME_CHANGE_POWER,
-        {
-          gameInfo: this.gameInfo
-        }
-      );
-      this.autoGoNextTurn(timeNextStep);
+      console.log(this.gameInfo.round, this.gameInfo.turn);
+
+      this.doAfter(delay, () => {
+        this.ctrRoom && this.ctrRoom.checkAfterTurn();
+        socketManager.sendMsgByUidList(
+          this.uidList,
+          PROTOCLE.SERVER.GAME_CHANGE_POWER,
+          {
+            gameInfo: this.gameInfo
+          }
+        );
+      });
     } else {
-      if (!this.ctrRoom.isMatch) {
-        this.uidList.forEach(uid => {
-          let userCtr = socketManager.getUserCtrById(uid);
-          userCtr.inRoomId = 0;
-          this.ctrRoom.leave(uid);
-        });
-      }
-
-      let uidWillSend = this.uidList.concat();
-      this.uidList = [];
-      this.gameInfo.isFinish = true;
-      this.ctrRoom.afterGameOver(this.gameInfo);
-
-      clearTimeout(this.timer);
-      // 游戏结束
-      setTimeout(
-        () => {
-          socketManager.sendMsgByUidList(
-            uidWillSend,
-            PROTOCLE.SERVER.GAME_FINISH,
-            {
-              gameInfo: this.gameInfo
-            }
-          );
-        },
-        this.ctrRoom.isMatch ? 0 : 5000
-      );
+      this.doAfter(delay, () => {
+        this.doFinishGame();
+      });
     }
-    this.ctrRoom && this.ctrRoom.checkAfterTurn();
   }
+  doFinishGame() {
+    clearInterval(this.timerChecker);
+    if (!this.ctrRoom.isMatch) {
+      this.uidList.forEach(uid => {
+        let userCtr = socketManager.getUserCtrById(uid);
+        userCtr.inRoomId = 0;
+        this.ctrRoom.leave(uid);
+      });
+    }
 
+    let uidWillSend = this.uidList.concat();
+    this.uidList = [];
+    this.gameInfo.isFinish = true;
+    this.ctrRoom.afterGameOver(this.gameInfo);
+
+    clearTimeout(this.timer);
+    // 游戏结束
+    setTimeout(
+      () => {
+        socketManager.sendMsgByUidList(
+          uidWillSend,
+          PROTOCLE.SERVER.GAME_FINISH,
+          {
+            gameInfo: this.gameInfo
+          }
+        );
+      },
+      this.ctrRoom.isMatch ? 0 : 5000
+    );
+  }
   timer;
   doAfter(time, func) {
     if (this.timer) {
