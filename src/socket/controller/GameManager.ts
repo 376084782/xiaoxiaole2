@@ -235,18 +235,11 @@ export default class GameManager {
 
     clearTimeout(this.timer);
     // 游戏结束
-    setTimeout(
-      () => {
-        socketManager.sendMsgByUidList(
-          uidWillSend,
-          PROTOCLE.SERVER.GAME_FINISH,
-          {
-            gameInfo: this.gameInfo
-          }
-        );
-      },
-      this.ctrRoom.isMatch ? 0 : 5000
-    );
+    setTimeout(() => {
+      socketManager.sendMsgByUidList(uidWillSend, PROTOCLE.SERVER.GAME_FINISH, {
+        gameInfo: this.gameInfo
+      });
+    }, 0);
   }
   timer;
   doAfter(time, func) {
