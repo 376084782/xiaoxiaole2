@@ -328,7 +328,9 @@ export default class GameManager {
         break;
       }
       case 2: {
-        listDel = this.useProp2();
+        let res = this.useProp2();
+        listDel = res.listDel;
+        extraData.idx = res.idx;
         break;
       }
       case 3: {
@@ -469,28 +471,33 @@ export default class GameManager {
   }
   // 毒
   useProp2() {
+    let x = Util.getRandomInt(2, 4);
+    let y = Util.getRandomInt(1, 4);
     let listDel = [];
-    let listXY = [
-      [1, 2],
-      [2, 2],
-      [4, 2],
-      [2, 3],
-      [3, 3],
-      [4, 3],
-      [5, 3],
-      [1, 4],
-      [2, 4],
-      [3, 4],
-      [4, 4],
-      [2, 5],
-      [3, 5],
-      [4, 5]
+    let dir = [
+      [0, 0],
+      [-1, 0],
+      [1, 0],
+      [2, 0],
+      [-1, -1],
+      [-2, -1],
+      [1, -1],
+
+      [-1, 1],
+      [-2, 1],
+      [0, 1],
+      [1, 1],
+
+      [-1, 2],
+      [0, 2],
+      [1, 2]
     ];
-    listXY.forEach(([x, y]) => {
-      let idx = this.xyToIdx(x, y);
+    dir.forEach(([dirX, dirY]) => {
+      let xy = { x: x + dirX, y: y + dirY };
+      let idx = this.xyToIdx(xy.x, xy.y);
       listDel.push(idx);
     });
-    return listDel;
+    return { listDel, idx: this.xyToIdx(x, y) };
   }
   // 火箭
   useProp3() {
