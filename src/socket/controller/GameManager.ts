@@ -14,6 +14,7 @@ export default class GameManager {
     turnList: [1, 1, 2, 2],
     skillNeed: 6,
     data1: {
+      propData: {},
       shuffle: 1,
       chuizi: 1,
       propId: 1,
@@ -25,6 +26,7 @@ export default class GameManager {
       uid: 1
     },
     data2: {
+      propData: {},
       shuffle: 1,
       chuizi: 1,
       propId: 2,
@@ -161,6 +163,7 @@ export default class GameManager {
         }
       }
     });
+    timeAnimate += 36 / 30;
     this.goNextTurn(
       this.gameInfo.listData,
       isGoNext,
@@ -379,7 +382,15 @@ export default class GameManager {
           // 油漆
           // 随机6个变色
           let listCanChangeIdxs = [];
-          let targetGridColor = currentTargetData.gridType;
+          let colorList = [];
+          for (let i = 0; i < 6; i++) {
+            let color = i + 1;
+            if (color != currentTargetData.gridType) {
+              colorList.push(color);
+            }
+          }
+          let targetGridColor =
+            colorList[Util.getRandomInt(0, colorList.length - 1)];
           this.gameInfo.listData.forEach((list, y) => {
             list.forEach((grid, x) => {
               if (grid < 100 && grid != targetGridColor) {
