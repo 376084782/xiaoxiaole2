@@ -82,7 +82,7 @@ export default class socketManager {
             if (result.result == 1) {
             rsv(result.data);
           } else {
-            rej(result);
+            rsv(result);
           }
         }
       });
