@@ -3,7 +3,7 @@ import socketManager from "..";
 import _ from "lodash";
 import PROTOCLE from "../config/PROTOCLE";
 import GameManager from "./GameManager";
-import { MATCH_NEED } from "../config";
+import { MATCH_NEED, PROP_LIST } from "../config";
 // 游戏内玩家全部离线的房间，自动清除
 export default class RoomManager {
   isMatch = false;
@@ -38,21 +38,21 @@ export default class RoomManager {
   }
   rankRound = 0;
   afterGameOver(gameInfo) {
+    let userGameData1 = gameInfo.data1;
+    let userGameData2 = gameInfo.data2;
+    let uidWinner =
+      userGameData1.score > userGameData2.score
+        ? userGameData1.uid
+        : userGameData2.uid;
+    this.waitingList.push(uidWinner);
+
+    let uidLoser =
+      userGameData1.score <= userGameData2.score
+        ? userGameData1.uid
+        : userGameData2.uid;
     if (this.isMatch) {
       this.checkAfterTurn();
       // 将胜利者塞到下一轮的待定组
-      let userGameData1 = gameInfo.data1;
-      let userGameData2 = gameInfo.data2;
-      let uidWinner =
-        userGameData1.score > userGameData2.score
-          ? userGameData1.uid
-          : userGameData2.uid;
-      this.waitingList.push(uidWinner);
-      // 输的踢出
-      let uidLoser =
-        userGameData1.score <= userGameData2.score
-          ? userGameData1.uid
-          : userGameData2.uid;
 
       let userCtr = socketManager.getUserCtrById(uidLoser);
       userCtr.inRoomId = 0;
@@ -60,6 +60,22 @@ export default class RoomManager {
       // 检查当前轮次 是否所有队伍完成pk，完成了进入下一轮
       if (this.rankRound >= 3) {
         console.log("最后一场比赛");
+        socketManager.doAjax({
+          url: "/gameover",
+          method: "post",
+          data: {
+            rank: 1,
+            orderId: uidWinner
+          }
+        });
+        socketManager.doAjax({
+          url: "/gameover",
+          method: "post",
+          data: {
+            rank: 2,
+            orderId: uidLoser
+          }
+        });
         this.isStarted = false;
         this.uidList.forEach(uid => {
           this.leave(uid);
@@ -73,6 +89,15 @@ export default class RoomManager {
         this.list2 = [];
         this.list3 = [];
       } else {
+        // 输的踢出
+        socketManager.doAjax({
+          url: "/gameover",
+          method: "post",
+          data: {
+            rank: 0,
+            orderId: uidLoser
+          }
+        });
         let currentList = this.getTargetRankList();
         let flagOverAll =
           currentList.length > 0 &&
@@ -85,6 +110,23 @@ export default class RoomManager {
         }, 10000);
       }
     } else {
+      // 上报游戏结果
+      socketManager.doAjax({
+        url: "/gameover",
+        method: "post",
+        data: {
+          rank: 1,
+          orderId: uidWinner
+        }
+      });
+      socketManager.doAjax({
+        url: "/gameover",
+        method: "post",
+        data: {
+          rank: 0,
+          orderId: uidLoser
+        }
+      });
       this.isStarted = false;
     }
   }
@@ -213,6 +255,21 @@ export default class RoomManager {
   }
 
   doStartGame() {
+    // 房间内的人都扣除对应的道具
+    this.uidList.forEach(uid => {
+      let propId = this.propMap[uid];
+      let propConf = PROP_LIST.find(conf => conf.id == propId);
+      socketManager.doAjax({
+        url: "/buy",
+        method: "post",
+        data: {
+          orderId: uid,
+          price: propConf.cost,
+          name: propConf.name
+        }
+      });
+    });
+
     // 显示匹配成功动画
     this.isStarted = true;
     let userDataList = [];

@@ -88,6 +88,7 @@ export default class GameManager {
             seat: color
           }
         );
+        this.goNextAfterAction(listAction, false);
       }
     }
   }
@@ -140,7 +141,7 @@ export default class GameManager {
           seat: colorCurrent,
           flagExtraMove: flagExtraMove
         });
-        this.goNextTurn(this.gameInfo.listData, false, false, 0);
+        this.goNextAfterAction(listAction, false);
       }
     } else {
       this.goNextTurn(this.gameInfo.listData, false, false, 0);
@@ -168,7 +169,7 @@ export default class GameManager {
       this.gameInfo.listData,
       isGoNext,
       false,
-      timeAnimate * 1000
+      Math.floor(timeAnimate * 1000)
     );
   }
   timerChecker;
@@ -180,7 +181,7 @@ export default class GameManager {
     this.goNextTurn(this.gameInfo.listData, false, true, 0);
   }
   goNextTurn(listData, isGoNextTurn = true, isGoNextRound = false, delay = 0) {
-    let timeNextStep = this.roundTime * 1000;
+    let timeNextStep = Math.floor(this.roundTime * 1000);
     this.gameInfo.listData = listData;
     if (
       this.gameInfo.round < 8 ||
@@ -193,6 +194,7 @@ export default class GameManager {
           new Date().getTime() + delay + timeNextStep;
       } else if (isGoNextTurn) {
         if (this.gameInfo.turn < 2) {
+          this.gameInfo.timeNextStep += delay;
           this.gameInfo.turn++;
         } else {
           this.gameInfo.timeNextStep =
@@ -203,8 +205,6 @@ export default class GameManager {
       } else {
         this.gameInfo.timeNextStep += delay;
       }
-      console.log(this.gameInfo.round, this.gameInfo.turn);
-
       this.doAfter(delay, () => {
         this.ctrRoom && this.ctrRoom.checkAfterTurn();
         socketManager.sendMsgByUidList(

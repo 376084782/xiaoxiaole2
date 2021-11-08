@@ -3,6 +3,15 @@ import PROTOCLE from "./config/PROTOCLE";
 import UserManager from "./controller/UserManager";
 import { PEOPLE_EACH_GAME_MAX, MATCH_NEED } from "./config";
 import Util from "./Util";
+// import $ from "jquery";
+
+var JSEncrypt = require('node-jsencrypt');
+const jsdom = require('jsdom');
+const {JSDOM} = jsdom;
+const {document} = (new JSDOM('<!doctype html><html><body></body></html>')).window;
+global.document = document;
+const window = document.defaultView;
+const $ = require('jquery')(window);
 
 export default class socketManager {
   static io;
@@ -32,6 +41,51 @@ export default class socketManager {
     this.sendMsgByUidList(uidList, PROTOCLE.SERVER.ERROR, {
       protocle,
       data
+    });
+  }
+  static generateData(data) {
+    var encrypt = new JSEncrypt();
+    var publicKeyBase64 =
+      "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDlCy2RqivbXI/TJDuow9dCe1kkXrl5oUgT5hGrr853FoBH6ZPUpPGA3Nyq2kuxxqkLl6dwi6X6WxLUVL/Dg59fR0MSD3YS/cLNZlGB25cXpKIPTY1zC/jwWCc/3hht4E8CqyTQK1xXMYRgSQmVDhVd10EUss9ypGSOnmGRLlAHmwIDAQAB";
+    encrypt.setPublicKey(publicKeyBase64);
+
+    var timestamp = new Date().valueOf();
+    data.timestamp = timestamp;
+    var json = JSON.stringify(data);
+    return encrypt.encrypt(json);
+  }
+  static doAjax({ url = "", data = {}, method = "get", noPop = false }) {
+    method = method.toUpperCase();
+    let host = "https://gongzhong.surbunjew.com/api/out/xxl";
+    if (url.indexOf("http") == -1) {
+      url = host + url;
+    }
+    return new Promise(async (rsv, rej) => {
+      var objStr = this.generateData(data);
+      $.ajax({
+        url: url,
+        type: method,
+        xhrFields: {
+          withCredentials: false
+        },
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers":
+            "Cookie,Set-Cookie,Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin",
+          "Access-Control-Allow-Methods": "PUT,POST,GET,DELETE,OPTIONS",
+          "X-Powered-By": "3.2.1",
+          "Content-Type": "text/plain; charset=UTF-8"
+        },
+        data: objStr,
+        success(result) {
+            console.log(result,'resssss')
+            if (result.result == 1) {
+            rsv(result.data);
+          } else {
+            rej(result);
+          }
+        }
+      });
     });
   }
   static sendMsgByUidList(userList: number[], type: string, data = {}) {
