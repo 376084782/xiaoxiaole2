@@ -147,7 +147,7 @@ export default class GameManager {
       this.goNextTurn(this.gameInfo.listData, false, false, 0);
     }
   }
-  goNextAfterAction(listAction, isGoNext = true, delay = 0) {
+  goNextAfterAction(listAction, isGoNext, delay = 0) {
     clearTimeout(this.timer);
     // 延迟一段时间用于播放移动动画
     let timeAnimate = delay;
@@ -180,13 +180,11 @@ export default class GameManager {
     }
     this.goNextTurn(this.gameInfo.listData, false, true, 0);
   }
-  goNextTurn(listData, isGoNextTurn = true, isGoNextRound = false, delay = 0) {
+  goNextTurn(listData, isGoNextTurn, isGoNextRound = false, delay = 0) {
     let timeNextStep = Math.floor(this.roundTime * 1000);
     this.gameInfo.listData = listData;
-    if (
-      this.gameInfo.round < 8 ||
-      (this.gameInfo.round == 8 && this.gameInfo.turn == 1)
-    ) {
+    let isEnd = false;
+    if (this.gameInfo.round <= 8) {
       if (isGoNextRound) {
         this.gameInfo.turn = 1;
         this.gameInfo.round++;
@@ -205,6 +203,14 @@ export default class GameManager {
       } else {
         this.gameInfo.timeNextStep += delay;
       }
+    }
+    isEnd = this.gameInfo.round > 8;
+
+    if (isEnd) {
+      this.doAfter(delay, () => {
+        this.doFinishGame();
+      });
+    } else {
       this.doAfter(delay, () => {
         this.ctrRoom && this.ctrRoom.checkAfterTurn();
         socketManager.sendMsgByUidList(
@@ -214,10 +220,6 @@ export default class GameManager {
             gameInfo: this.gameInfo
           }
         );
-      });
-    } else {
-      this.doAfter(delay, () => {
-        this.doFinishGame();
       });
     }
   }
@@ -490,9 +492,11 @@ export default class GameManager {
       [-1, 0],
       [1, 0],
       [2, 0],
+
       [-1, -1],
       [-2, -1],
       [1, -1],
+      [0, -1],
 
       [-1, 1],
       [-2, 1],
