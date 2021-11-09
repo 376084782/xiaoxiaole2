@@ -498,14 +498,14 @@ export default class GameManager {
       [1, -1],
       [0, -1],
 
-      [-1, 1],
+      // [-1, 1],
       [-2, 1],
       [0, 1],
       [1, 1],
 
-      [-1, 2],
+      // [-1, 2],
       [0, 2],
-      [1, 2]
+      // [1, 2]
     ];
     dir.forEach(([dirX, dirY]) => {
       let xy = { x: x + dirX, y: y + dirY };
