@@ -12,7 +12,7 @@ export const PROP_LIST = [
     name: "鞭炮",
     cardBg: "卡-红",
     icon: "鞭炮",
-    cost: 1,
+    cost: 10,
     aniNameInMission: "biaopao"
   },
   {
@@ -21,7 +21,7 @@ export const PROP_LIST = [
     name: "鸭子",
     cardBg: "卡-红",
     icon: "鸭子",
-    cost: 1,
+    cost: 20,
     aniNameInMission: "yazi"
   },
   {
@@ -30,7 +30,7 @@ export const PROP_LIST = [
     name: "油漆",
     cardBg: "卡-红",
     icon: "油漆桶",
-    cost: 2,
+    cost: 50,
     aniNameInMission: "tong"
   },
   {
@@ -39,7 +39,7 @@ export const PROP_LIST = [
     name: "毒",
     cardBg: "卡-灰",
     icon: "毒气",
-    cost: 2,
+    cost: 100,
     aniNameInMission: "duqi"
   },
   {
@@ -48,7 +48,7 @@ export const PROP_LIST = [
     name: "火箭",
     cardBg: "卡-灰",
     icon: "炸弹",
-    cost: 3,
+    cost: 100,
     aniNameInMission: "huojian"
   },
   {
@@ -57,7 +57,7 @@ export const PROP_LIST = [
     name: "帽子",
     cardBg: "卡-灰",
     icon: "帽子",
-    cost: 3,
+    cost: 200,
     aniNameInMission: "maozi"
   }
 ];
