@@ -504,7 +504,7 @@ export default class GameManager {
       [1, 1],
 
       // [-1, 2],
-      [0, 2],
+      [0, 2]
       // [1, 2]
     ];
     dir.forEach(([dirX, dirY]) => {
@@ -1016,14 +1016,14 @@ export default class GameManager {
         let colorTop = -1;
         if (n >= 1) {
           // 查询左侧的格子颜色
-          colorLeft = listNew[m][n - 1];
+          colorLeft = listNew[m][n - 1] % 10;
         }
         if (m >= 1) {
           // 查询上侧的格子颜色
-          colorTop = listNew[m - 1][n];
+          colorTop = listNew[m - 1][n] % 10;
         }
         let listColor = list1.filter(
-          color => color != colorLeft && color != colorTop
+          color => color % 10 != colorLeft && color % 10 != colorTop
         );
         if (listColor.length == 0) {
           // 无解，重算
@@ -1035,7 +1035,9 @@ export default class GameManager {
         listNew[m][n] = listColor[randomIdx];
 
         // 从list1里反查这个颜色，排除掉
-        let idx2 = list1.findIndex(color => color == listColor[randomIdx]);
+        let idx2 = list1.findIndex(
+          color => color % 10 == listColor[randomIdx] % 10
+        );
         list1.splice(idx2, 1);
       }
     }
@@ -1060,13 +1062,15 @@ export default class GameManager {
       let listIdx = [];
       let endIdx = idx;
       listIdxNew.forEach((colorNew, idxNew) => {
-        if (idxNew != idx && colorNew == color) {
+        if (idxNew != idx && colorNew % 10 == color % 10) {
           listIdx.push(idxNew);
         }
       });
       if (listIdx.length > 0) {
         let idx3 = Util.getRandomInt(0, listIdx.length);
         endIdx = listIdx[idx3];
+      } else {
+        console.log("没有可以随机的位置了blabla");
       }
       // 将endIdx对应的颜色置空，防止后续重复随机
       listIdxNew[endIdx] = -1;
