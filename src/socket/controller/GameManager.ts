@@ -1035,9 +1035,7 @@ export default class GameManager {
         listNew[m][n] = listColor[randomIdx];
 
         // 从list1里反查这个颜色，排除掉
-        let idx2 = list1.findIndex(
-          color => color % 10 == listColor[randomIdx] % 10
-        );
+        let idx2 = list1.findIndex(color => color == listColor[randomIdx]);
         list1.splice(idx2, 1);
       }
     }
