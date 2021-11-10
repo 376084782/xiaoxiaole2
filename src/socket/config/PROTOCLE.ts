@@ -12,6 +12,7 @@ export default class PROTOCLE {
     USE_PROP:'USE_PROP'
   };
   static SERVER = {
+    RANK_RESULT:'RANK_RESULT',
     RANK_GAME_START:'RANK_GAME_START',
     RANK_UPDATE:'RANK_UPDATE',
     MOVE:'MOVE',

@@ -1062,7 +1062,7 @@ export default class GameManager {
       let listIdx = [];
       let endIdx = idx;
       listIdxNew.forEach((colorNew, idxNew) => {
-        if (idxNew != idx && colorNew % 10 == color % 10) {
+        if (idxNew != idx && colorNew == color) {
           listIdx.push(idxNew);
         }
       });

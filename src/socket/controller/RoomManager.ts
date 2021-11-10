@@ -76,6 +76,23 @@ export default class RoomManager {
             orderId: uidLoser
           }
         });
+
+        socketManager.sendMsgByUidList(
+          [uidLoser],
+          PROTOCLE.SERVER.RANK_RESULT,
+          {
+            orderId: uidWinner,
+            rank: 1
+          }
+        );
+        socketManager.sendMsgByUidList(
+          [uidLoser],
+          PROTOCLE.SERVER.RANK_RESULT,
+          {
+            orderId: uidLoser,
+            rank: 2
+          }
+        );
         this.isStarted = false;
         this.uidList.forEach(uid => {
           this.leave(uid);
@@ -98,6 +115,15 @@ export default class RoomManager {
             orderId: uidLoser
           }
         });
+        socketManager.sendMsgByUidList(
+          [uidLoser],
+          PROTOCLE.SERVER.RANK_RESULT,
+          {
+            orderId: uidLoser,
+            rank: 0
+          }
+        );
+
         let currentList = this.getTargetRankList();
         let flagOverAll =
           currentList.length > 0 &&
@@ -192,7 +218,7 @@ export default class RoomManager {
     this.propMap[uid] = propId;
     if (this.isMatch) {
       if (this.uidList.length == 0) {
-        // this.uidList = [1, 2, 3, 4, 5, 6];
+        this.uidList = [1, 2, 3, 4, 5, 6];
       }
       this.uidList.push(uid);
       this.waitingList = this.uidList;
