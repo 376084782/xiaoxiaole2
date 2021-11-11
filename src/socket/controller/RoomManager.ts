@@ -17,6 +17,7 @@ export default class RoomManager {
   uidList = [];
   gameManagerList: GameManager[] = [];
   propMap = {};
+  matchDataMap = {};
   getGameCtr(uid) {
     return this.gameManagerList.find(
       (ctr: GameManager) => ctr.uidList.indexOf(uid) > -1
@@ -39,11 +40,17 @@ export default class RoomManager {
       return [];
     }
   }
+  orderMap = {};
+  getOrderByUid(uid) {
+    return this.orderMap[uid];
+  }
   rankRound = 0;
   afterGameOver(gameInfo) {
     let uidWinner = gameInfo.winner;
-    this.waitingList.push(uidWinner);
     let uidLoser = gameInfo.loser;
+    let orderWinner = this.getOrderByUid(uidWinner);
+    let orderLoser = this.getOrderByUid(uidLoser);
+    this.waitingList.push(uidWinner);
 
     if (this.isMatch) {
       this.checkAfterTurn();
@@ -55,20 +62,28 @@ export default class RoomManager {
       // 检查当前轮次 是否所有队伍完成pk，完成了进入下一轮
       if (this.rankRound >= 3) {
         console.log("最后一场比赛");
+        console.log("上报游戏结果", {
+          rank: 1,
+          orderId: orderWinner
+        });
         socketManager.doAjax({
           url: "/gameover",
           method: "post",
           data: {
             rank: 1,
-            orderId: uidWinner
+            orderId: orderWinner
           }
+        });
+        console.log("上报游戏结果", {
+          rank: 2,
+          orderId: orderLoser
         });
         socketManager.doAjax({
           url: "/gameover",
           method: "post",
           data: {
             rank: 2,
-            orderId: uidLoser
+            orderId: orderLoser
           }
         });
 
@@ -76,7 +91,7 @@ export default class RoomManager {
           [uidWinner],
           PROTOCLE.SERVER.RANK_RESULT,
           {
-            orderId: uidWinner,
+            orderId: orderWinner,
             rank: 1
           }
         );
@@ -84,7 +99,7 @@ export default class RoomManager {
           [uidLoser],
           PROTOCLE.SERVER.RANK_RESULT,
           {
-            orderId: uidLoser,
+            orderId: orderLoser,
             rank: 2
           }
         );
@@ -102,19 +117,23 @@ export default class RoomManager {
         this.list3 = [];
       } else {
         // 输的踢出
+        console.log("上报游戏结果", {
+          rank: 0,
+          orderId: orderLoser
+        });
         socketManager.doAjax({
           url: "/gameover",
           method: "post",
           data: {
             rank: 0,
-            orderId: uidLoser
+            orderId: orderLoser
           }
         });
         socketManager.sendMsgByUidList(
           [uidLoser],
           PROTOCLE.SERVER.RANK_RESULT,
           {
-            orderId: uidLoser,
+            orderId: orderLoser,
             rank: 0
           }
         );
@@ -131,20 +150,28 @@ export default class RoomManager {
       }
     } else {
       // 上报游戏结果
+      console.log("上报游戏结果", {
+        rank: 1,
+        orderId: orderWinner
+      });
       socketManager.doAjax({
         url: "/gameover",
         method: "post",
         data: {
           rank: 1,
-          orderId: uidWinner
+          orderId: orderWinner
         }
+      });
+      console.log("上报游戏结果", {
+        rank: 0,
+        orderId: orderLoser
       });
       socketManager.doAjax({
         url: "/gameover",
         method: "post",
         data: {
           rank: 0,
-          orderId: uidLoser
+          orderId: orderLoser
         }
       });
       this.isStarted = false;
@@ -207,11 +234,16 @@ export default class RoomManager {
     }
   }
   // 玩家加入
-  join(uid, propId) {
+  join({ uid, propId, matchId, type, lp }) {
     if (this.isStarted) {
       return;
     }
     this.propMap[uid] = propId;
+    this.matchDataMap[uid] = {
+      matchId,
+      type,
+      lp
+    };
     if (this.isMatch) {
       if (this.uidList.length == 0) {
         this.uidList = [1, 2, 3, 4, 5, 6];
@@ -272,43 +304,54 @@ export default class RoomManager {
   list3: GameManager[] = [];
   doStartMatch() {
     // 房间内的人都扣除对应的道具
-    this.uidList.forEach(uid => {
-      let propId = this.propMap[uid];
-      let propConf = PROP_LIST.find(conf => conf.id == propId);
-      if (propConf) {
-        console.log("游戏开始，扣除对应令牌", uid, propConf.cost);
-        socketManager.doAjax({
-          url: "/buy",
-          method: "post",
-          data: {
-            orderId: uid,
-            price: propConf.cost,
-            name: propConf.name
-          }
-        });
-      }
-    });
+    this.doPay();
     this.isStarted = true;
     this.waitingList = this.uidList;
     this.goNextRankRound();
   }
 
-  doStartGame() {
+  doPay() {
     // 房间内的人都扣除对应的道具
     this.uidList.forEach(uid => {
       let propId = this.propMap[uid];
+      let startData = this.matchDataMap[uid];
       let propConf = PROP_LIST.find(conf => conf.id == propId);
-      console.log("游戏开始，扣除对应令牌", uid, propConf.cost);
-      socketManager.doAjax({
-        url: "/buy",
-        method: "post",
-        data: {
-          orderId: uid,
-          price: propConf.cost,
-          name: propConf.name
-        }
-      });
+      if (propConf) {
+        let dataSend = {
+          userId: uid,
+          matchId: startData.matchId,
+          type: "" + startData.type,
+          lp: startData.lp
+        };
+        console.log("请求创建游戏开始订单:", dataSend);
+        socketManager
+          .doAjax({
+            url: "/start",
+            method: "post",
+            data: dataSend
+          })
+          .then((e: any) => {
+            console.log("创建游戏订单返回:", e);
+            if (e.result == 1) {
+              this.orderMap[uid] = e.data;
+              let dataCost = {
+                orderId: e.data,
+                price: propConf.cost,
+                name: propConf.name
+              };
+              console.log("请求消耗道具:", dataCost);
+              socketManager.doAjax({
+                url: "/buy",
+                method: "post",
+                data: dataCost
+              });
+            }
+          });
+      }
     });
+  }
+  doStartGame() {
+    this.doPay();
 
     // 显示匹配成功动画
     this.isStarted = true;

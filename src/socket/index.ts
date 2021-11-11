@@ -82,11 +82,7 @@ export default class socketManager {
         },
         data: objStr,
         success(result) {
-          if (result.result == 1) {
-            rsv(result.data);
-          } else {
-            rsv(result);
-          }
+          rsv(result);
         }
       });
     });
@@ -192,7 +188,7 @@ export default class socketManager {
       }
       case PROTOCLE.CLIENT.MATCH: {
         // 参与或者取消匹配
-        let { flag, isMatch, type, lp } = data;
+        let { flag, isMatch, type, lp, matchId } = data;
         if (flag) {
           if (roomCtr) {
             this.sendErrByUidList([userCtr.uid], PROTOCLE.CLIENT.MATCH, {
@@ -202,10 +198,16 @@ export default class socketManager {
             return;
           }
           let targetRoom: RoomManager;
-          targetRoom = this.getRoomCanJoin( type, lp,isMatch);
+          targetRoom = this.getRoomCanJoin(type, lp, isMatch);
           console.log(targetRoom.roomId, targetRoom.isMatch, isMatch, "mmmmm");
 
-          targetRoom.join(uid, data.propId);
+          targetRoom.join({
+            uid,
+            propId: data.propId,
+            matchId,
+            type,
+            lp
+          });
           userCtr.inRoomId = targetRoom.roomId;
           userCtr.updateToClient();
         } else {

@@ -20,6 +20,7 @@ export default class GameManager {
     winner: 0,
     loser: 0,
     data1: {
+      orderId: 0,
       propData: {},
       shuffle: 1,
       chuizi: 1,
@@ -32,6 +33,7 @@ export default class GameManager {
       uid: 1
     },
     data2: {
+      orderId: 0,
       propData: {},
       shuffle: 1,
       chuizi: 1,
@@ -298,7 +300,8 @@ export default class GameManager {
     // 游戏结束
     setTimeout(() => {
       socketManager.sendMsgByUidList(uidWillSend, PROTOCLE.SERVER.GAME_FINISH, {
-        gameInfo: this.gameInfo
+        gameInfo: this.gameInfo,
+        orderMap: this.ctrRoom.orderMap
       });
     }, 0);
   }
