@@ -13,6 +13,7 @@ export default class GameManager {
   gameInfo = {
     isFinish: false,
     round: 1,
+    maxRound: 8,
     turn: 1,
     turnList: [1, 1, 2, 2],
     skillNeed: 6,
@@ -207,6 +208,12 @@ export default class GameManager {
     }
     if (isGoNextRound || isGoNextTurn) {
       this.flagRoundAction = false;
+      if (
+        this.gameInfo.round == this.gameInfo.maxRound &&
+        this.gameInfo.data1.score == this.gameInfo.data2.score
+      ) {
+        this.gameInfo.maxRound += 2;
+      }
     }
     if (this.countNoAction1 >= 2) {
       isEnd = true;
@@ -237,9 +244,7 @@ export default class GameManager {
       }
       isEnd = false;
       if (
-        this.gameInfo.round > 8 &&
-        this.gameInfo.round % 2 == 1 &&
-        this.gameInfo.turn == 1 &&
+        this.gameInfo.round > this.gameInfo.maxRound &&
         this.gameInfo.data1.score != this.gameInfo.data2.score
       ) {
         console.log("======isEnd=========", this.gameInfo.round);
