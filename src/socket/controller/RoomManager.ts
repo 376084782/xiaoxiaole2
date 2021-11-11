@@ -6,6 +6,9 @@ import GameManager from "./GameManager";
 import { MATCH_NEED, PROP_LIST } from "../config";
 // 游戏内玩家全部离线的房间，自动清除
 export default class RoomManager {
+  type = 0;
+  lp = 0;
+
   isMatch = false;
   roomId = 1;
   isPublic = true;
@@ -38,18 +41,10 @@ export default class RoomManager {
   }
   rankRound = 0;
   afterGameOver(gameInfo) {
-    let userGameData1 = gameInfo.data1;
-    let userGameData2 = gameInfo.data2;
-    let uidWinner =
-      userGameData1.score > userGameData2.score
-        ? userGameData1.uid
-        : userGameData2.uid;
+    let uidWinner = gameInfo.winner;
     this.waitingList.push(uidWinner);
+    let uidLoser = gameInfo.loser;
 
-    let uidLoser =
-      userGameData1.score <= userGameData2.score
-        ? userGameData1.uid
-        : userGameData2.uid;
     if (this.isMatch) {
       this.checkAfterTurn();
       // 将胜利者塞到下一轮的待定组
@@ -78,7 +73,7 @@ export default class RoomManager {
         });
 
         socketManager.sendMsgByUidList(
-          [uidLoser],
+          [uidWinner],
           PROTOCLE.SERVER.RANK_RESULT,
           {
             orderId: uidWinner,
@@ -128,7 +123,6 @@ export default class RoomManager {
         let flagOverAll =
           currentList.length > 0 &&
           currentList.every((ctr: GameManager) => ctr.gameInfo.isFinish);
-        console.log(flagOverAll, currentList.length, "flagOverAll");
         setTimeout(() => {
           if (flagOverAll) {
             this.goNextRankRound();
@@ -194,8 +188,10 @@ export default class RoomManager {
     }
     this.checkAfterTurn();
   }
-  constructor(isMatch) {
+  constructor(isMatch, type, lp) {
     this.isMatch = isMatch;
+    this.type = type;
+    this.lp = lp;
     this.roomId = Util.getUniqId();
   }
   askShuffle(uid) {
@@ -218,7 +214,7 @@ export default class RoomManager {
     this.propMap[uid] = propId;
     if (this.isMatch) {
       if (this.uidList.length == 0) {
-        // this.uidList = [1, 2, 3, 4, 5, 6];
+        this.uidList = [1, 2, 3, 4, 5, 6];
       }
       this.uidList.push(uid);
       this.waitingList = this.uidList;
@@ -275,6 +271,23 @@ export default class RoomManager {
   list2: GameManager[] = [];
   list3: GameManager[] = [];
   doStartMatch() {
+    // 房间内的人都扣除对应的道具
+    this.uidList.forEach(uid => {
+      let propId = this.propMap[uid];
+      let propConf = PROP_LIST.find(conf => conf.id == propId);
+      if (propConf) {
+        console.log("游戏开始，扣除对应令牌", uid, propConf.cost);
+        socketManager.doAjax({
+          url: "/buy",
+          method: "post",
+          data: {
+            orderId: uid,
+            price: propConf.cost,
+            name: propConf.name
+          }
+        });
+      }
+    });
     this.isStarted = true;
     this.waitingList = this.uidList;
     this.goNextRankRound();
@@ -285,6 +298,7 @@ export default class RoomManager {
     this.uidList.forEach(uid => {
       let propId = this.propMap[uid];
       let propConf = PROP_LIST.find(conf => conf.id == propId);
+      console.log("游戏开始，扣除对应令牌", uid, propConf.cost);
       socketManager.doAjax({
         url: "/buy",
         method: "post",

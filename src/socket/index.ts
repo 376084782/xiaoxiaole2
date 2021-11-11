@@ -5,23 +5,27 @@ import { PEOPLE_EACH_GAME_MAX, MATCH_NEED } from "./config";
 import Util from "./Util";
 // import $ from "jquery";
 
-var JSEncrypt = require('node-jsencrypt');
-const jsdom = require('jsdom');
-const {JSDOM} = jsdom;
-const {document} = (new JSDOM('<!doctype html><html><body></body></html>')).window;
+var JSEncrypt = require("node-jsencrypt");
+const jsdom = require("jsdom");
+const { JSDOM } = jsdom;
+const { document } = new JSDOM(
+  "<!doctype html><html><body></body></html>"
+).window;
 global.document = document;
 const window = document.defaultView;
-const $ = require('jquery')(window);
+const $ = require("jquery")(window);
 
 export default class socketManager {
   static io;
   static userSockets = {};
   static userMap: UserManager[] = [];
   static aliveRoomList: RoomManager[] = [];
-  static getRoomCanJoin(isMatch = false): RoomManager {
+  static getRoomCanJoin(type, lp, isMatch = false): RoomManager {
     // 检查当前已存在的房间中 公开的，人未满的,未开始游戏的
     let list = this.aliveRoomList.filter((roomCtr: RoomManager) => {
       return (
+        roomCtr.type === type &&
+        roomCtr.lp === lp &&
         roomCtr.isMatch === isMatch &&
         roomCtr.isPublic &&
         roomCtr.uidList.length < (isMatch ? MATCH_NEED : 2) &&
@@ -29,7 +33,7 @@ export default class socketManager {
       );
     });
     if (list.length == 0) {
-      let roomNew = new RoomManager(isMatch);
+      let roomNew = new RoomManager(isMatch, type, lp);
       this.aliveRoomList.push(roomNew);
       return roomNew;
     } else {
@@ -78,8 +82,7 @@ export default class socketManager {
         },
         data: objStr,
         success(result) {
-            console.log(result,'resssss')
-            if (result.result == 1) {
+          if (result.result == 1) {
             rsv(result.data);
           } else {
             rsv(result);
@@ -189,7 +192,7 @@ export default class socketManager {
       }
       case PROTOCLE.CLIENT.MATCH: {
         // 参与或者取消匹配
-        let { flag, isMatch } = data;
+        let { flag, isMatch, type, lp } = data;
         if (flag) {
           if (roomCtr) {
             this.sendErrByUidList([userCtr.uid], PROTOCLE.CLIENT.MATCH, {
@@ -199,7 +202,7 @@ export default class socketManager {
             return;
           }
           let targetRoom: RoomManager;
-          targetRoom = this.getRoomCanJoin(isMatch);
+          targetRoom = this.getRoomCanJoin( type, lp,isMatch);
           console.log(targetRoom.roomId, targetRoom.isMatch, isMatch, "mmmmm");
 
           targetRoom.join(uid, data.propId);

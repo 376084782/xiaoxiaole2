@@ -5,14 +5,19 @@ import _ = require("lodash");
 import RoomManager from "./RoomManager";
 
 export default class GameManager {
-  roundTime = 60;
+  roundTime = 40;
   ctrRoom: RoomManager;
+  countNoAction1 = 0;
+  countNoAction2 = 0;
+  flagRoundAction = false;
   gameInfo = {
     isFinish: false,
     round: 1,
     turn: 1,
     turnList: [1, 1, 2, 2],
     skillNeed: 6,
+    winner: 0,
+    loser: 0,
     data1: {
       propData: {},
       shuffle: 1,
@@ -184,7 +189,34 @@ export default class GameManager {
     let timeNextStep = Math.floor(this.roundTime * 1000);
     this.gameInfo.listData = listData;
     let isEnd = false;
-    if (this.gameInfo.round <= 8) {
+
+    // 如果超过两轮没有动作，直接结束
+    if (this.gameInfo.round % 2 == 1) {
+      if (!this.flagRoundAction) {
+        this.countNoAction1++;
+        console.log("+++++++1");
+      } else {
+        this.countNoAction1 = 0;
+      }
+    } else {
+      if (!this.flagRoundAction) {
+        this.countNoAction2++;
+      } else {
+        this.countNoAction2 = 0;
+      }
+    }
+    if (isGoNextRound || isGoNextTurn) {
+      this.flagRoundAction = false;
+    }
+    if (this.countNoAction1 >= 2) {
+      isEnd = true;
+      this.gameInfo.winner = this.gameInfo.data2.uid;
+      this.gameInfo.loser = this.gameInfo.data1.uid;
+    } else if (this.countNoAction2 >= 2) {
+      isEnd = true;
+      this.gameInfo.winner = this.gameInfo.data1.uid;
+      this.gameInfo.loser = this.gameInfo.data2.uid;
+    } else {
       if (isGoNextRound) {
         this.gameInfo.turn = 1;
         this.gameInfo.round++;
@@ -203,10 +235,29 @@ export default class GameManager {
       } else {
         this.gameInfo.timeNextStep += delay;
       }
+      isEnd = false;
+      if (
+        this.gameInfo.round > 8 &&
+        this.gameInfo.round % 2 == 1 &&
+        this.gameInfo.turn == 1 &&
+        this.gameInfo.data1.score != this.gameInfo.data2.score
+      ) {
+        console.log("======isEnd=========", this.gameInfo.round);
+        isEnd = true;
+        if (this.gameInfo.data1.score > this.gameInfo.data2.score) {
+          this.gameInfo.winner = this.gameInfo.data1.uid;
+          this.gameInfo.loser = this.gameInfo.data2.uid;
+        }
+        if (this.gameInfo.data2.score > this.gameInfo.data1.score) {
+          this.gameInfo.winner = this.gameInfo.data2.uid;
+          this.gameInfo.loser = this.gameInfo.data1.uid;
+        }
+      }
     }
-    isEnd = this.gameInfo.round > 8;
 
     if (isEnd) {
+      clearInterval(this.timerChecker);
+      this.gameInfo.isFinish = true;
       this.doAfter(delay, () => {
         this.doFinishGame();
       });
@@ -567,6 +618,7 @@ export default class GameManager {
   }
 
   loopCrash(listWillDel = []) {
+    this.flagRoundAction = true;
     let res: any[] = this.checkMerge();
     let listWillChange = [];
     res.forEach(dataDismiss => {
