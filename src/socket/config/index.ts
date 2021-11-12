@@ -48,7 +48,7 @@ export const PROP_LIST = [
     name: "火箭",
     cardBg: "卡-灰",
     icon: "炸弹",
-    cost: 100,
+    cost: 200,
     aniNameInMission: "huojian"
   },
   {
@@ -57,7 +57,7 @@ export const PROP_LIST = [
     name: "帽子",
     cardBg: "卡-灰",
     icon: "帽子",
-    cost: 200,
+    cost: 100,
     aniNameInMission: "maozi"
   }
 ];
