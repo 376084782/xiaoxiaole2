@@ -303,6 +303,7 @@ export default class RoomManager {
   list2: GameManager[] = [];
   list3: GameManager[] = [];
   doStartMatch() {
+    this.isStarted = true;
     // 房间内的人都扣除对应的道具
     this.doPay()
       .then(e => {
@@ -373,6 +374,7 @@ export default class RoomManager {
     });
   }
   doStartGame() {
+    this.isStarted = true;
     this.doPay()
       .then(e => {
         // 显示匹配成功动画
