@@ -5,6 +5,7 @@ import _ = require("lodash");
 import RoomManager from "./RoomManager";
 
 export default class GameManager {
+  flagAnimating = false;
   roundTime = 40;
   ctrRoom: RoomManager;
   countNoAction1 = 0;
@@ -73,6 +74,17 @@ export default class GameManager {
     let timeNextStep = this.roundTime * 1000 + timeAni;
     this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
     this.initBoard();
+
+    // this.gameInfo.listData[0][0] = 1;
+    // this.gameInfo.listData[0][1] = 1;
+    // this.gameInfo.listData[0][2] = 1;
+    // this.gameInfo.listData[0][3] = 1;
+    // this.gameInfo.listData[1][0] = 1;
+    // this.gameInfo.listData[1][2] = 1;
+    // this.gameInfo.listData[1][3] = 1;
+    // this.gameInfo.listData[2][2] = 1;
+    // this.gameInfo.listData[2][3] = 1;
+
     clearInterval(this.timerChecker);
     this.timerChecker = setInterval(this.timeChecker.bind(this), 500);
   }
@@ -263,13 +275,17 @@ export default class GameManager {
     }
 
     if (isEnd) {
+      this.flagAnimating = true;
       clearInterval(this.timerChecker);
       this.gameInfo.isFinish = true;
       this.doAfter(delay, () => {
+        this.flagAnimating = false;
         this.doFinishGame();
       });
     } else {
+      this.flagAnimating = true;
       this.doAfter(delay, () => {
+        this.flagAnimating = false;
         this.ctrRoom && this.ctrRoom.checkAfterTurn();
         socketManager.sendMsgByUidList(
           this.uidList,
@@ -799,6 +815,22 @@ export default class GameManager {
     let flagMoreThan3 = flagMoreThanInX || flagMoreThanInY;
     return flagMoreThan3;
   }
+  checkIsLX(num = []) {
+    num = num.sort((a, b) => a - b);
+    var ncontinuity = 0; //用于连续个数的统计
+    for (var i = 1; i < num.length; i++) {
+      if (num[i] - num[i - 1] == 1 || num[i] - num[i - 1] == -1) {
+        //等于1代表升序连贯   等于-1代表降序连贯
+        ncontinuity += 1; //存在连贯：计数+1
+      }
+    }
+
+    if (ncontinuity > num.length - 2) {
+      return true;
+    } else {
+      return false;
+    }
+  }
   checkMerge() {
     let map = [];
     let flagExtraMove = false;
@@ -813,21 +845,25 @@ export default class GameManager {
 
           let listXSameOver3 = listLinked.filter(grid1 => {
             let xy1 = this.idxToXY(grid1);
-            return (
-              listLinked.filter(grid => {
-                let xy = this.idxToXY(grid);
-                return xy.y == xy1.y;
-              }).length >= 3
-            );
+            let listY = [];
+            listLinked.forEach(idx => {
+              let xy = this.idxToXY(idx);
+              if (xy.y == xy1.y) {
+                listY.push(xy.x);
+              }
+            });
+            return listY.length >= 3 && this.checkIsLX(listY);
           });
           let listYSameOver3 = listLinked.filter(grid1 => {
             let xy1 = this.idxToXY(grid1);
-            return (
-              listLinked.filter(grid => {
-                let xy = this.idxToXY(grid);
-                return xy.x == xy1.x;
-              }).length >= 3
-            );
+            let listX = [];
+            listLinked.forEach(idx => {
+              let xy = this.idxToXY(idx);
+              if (xy.x == xy1.x) {
+                listX.push(xy.y);
+              }
+            });
+            return listX.length >= 3 && this.checkIsLX(listX);
           });
           let flagMoreThan3 = false;
           // todo:效率略低，可以优化成根据终点位置横纵向查询

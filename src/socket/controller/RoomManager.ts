@@ -223,13 +223,13 @@ export default class RoomManager {
   }
   askShuffle(uid) {
     let gameCtr = this.getGameCtr(uid);
-    if (gameCtr) {
+    if (gameCtr && !gameCtr.flagAnimating) {
       gameCtr.askShuffle(uid);
     }
   }
   askChuizi(uid, idx) {
     let gameCtr = this.getGameCtr(uid);
-    if (gameCtr) {
+    if (gameCtr && !gameCtr.flagAnimating) {
       gameCtr.askChuizi(uid, idx);
     }
   }
@@ -450,13 +450,16 @@ export default class RoomManager {
   }
   doMove(idx1, idx2, uid) {
     let gameCtr = this.getGameCtr(uid);
-    if (gameCtr) {
+    if (gameCtr && !gameCtr.flagAnimating) {
       gameCtr.doMove(idx1, idx2, uid);
     }
   }
   useProp(id, uid) {
+    if (!this.isStarted) {
+      return;
+    }
     let gameCtr = this.getGameCtr(uid);
-    if (gameCtr) {
+    if (gameCtr && !gameCtr.flagAnimating) {
       gameCtr.useProp(id, uid);
     }
   }
