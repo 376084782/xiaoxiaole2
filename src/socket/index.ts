@@ -58,28 +58,35 @@ export default class socketManager {
     var json = JSON.stringify(data);
     return encrypt.encrypt(json);
   }
-  static doAjax({ url = "", data = {}, method = "get", noPop = false }) {
+  static doAjax({ url = "", data = {}, method = "get", noMd5 = false }) {
     method = method.toUpperCase();
     let host = "https://gongzhong.surbunjew.com/api/out/xxl";
     if (url.indexOf("http") == -1) {
       url = host + url;
     }
     return new Promise(async (rsv, rej) => {
-      var objStr = this.generateData(data);
+      var objStr: any;
+      let headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers":
+          "Cookie,Set-Cookie,Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin",
+        "Access-Control-Allow-Methods": "PUT,POST,GET,DELETE,OPTIONS",
+        "X-Powered-By": "3.2.1"
+      };
+      if (noMd5) {
+        headers["Content-Type"] = "application/json; charset=UTF-8";
+        objStr = JSON.stringify(data);
+      } else {
+        objStr = this.generateData(data);
+        headers["Content-Type"] = "text/plain; charset=UTF-8";
+      }
       $.ajax({
         url: url,
         type: method,
         xhrFields: {
           withCredentials: false
         },
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Headers":
-            "Cookie,Set-Cookie,Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin",
-          "Access-Control-Allow-Methods": "PUT,POST,GET,DELETE,OPTIONS",
-          "X-Powered-By": "3.2.1",
-          "Content-Type": "text/plain; charset=UTF-8"
-        },
+        headers,
         data: objStr,
         success(result) {
           rsv(result);
@@ -211,7 +218,7 @@ export default class socketManager {
           userCtr.inRoomId = targetRoom.roomId;
           userCtr.updateToClient();
         } else {
-          if (!roomCtr) {
+          if (!roomCtr || roomCtr.isStarted) {
             return;
           }
           roomCtr.leave(uid);

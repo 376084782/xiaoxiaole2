@@ -304,89 +304,123 @@ export default class RoomManager {
   list3: GameManager[] = [];
   doStartMatch() {
     // 房间内的人都扣除对应的道具
-    this.doPay();
-    this.isStarted = true;
-    this.waitingList = this.uidList;
-    this.goNextRankRound();
+    this.doPay()
+      .then(e => {
+        console.log("rsv");
+        this.isStarted = true;
+        this.waitingList = this.uidList;
+        this.goNextRankRound();
+      })
+      .catch(e => {
+        console.log("rej");
+        socketManager.sendErrByUidList(this.uidList, "startGame", e);
+        this.isStarted = false;
+        this.uidList.forEach(uid => {
+          this.leave(uid);
+          let ctrUser = socketManager.getUserCtrById(uid);
+          ctrUser.inRoomId = 0;
+        });
+      });
   }
 
   doPay() {
-    // 房间内的人都扣除对应的道具
-    this.uidList.forEach(uid => {
-      let propId = this.propMap[uid];
-      let startData = this.matchDataMap[uid];
-      let propConf = PROP_LIST.find(conf => conf.id == propId);
-      if (propConf) {
+    return new Promise((rsv, rej) => {
+      setTimeout(() => {
         let dataSend = {
-          userId: uid,
-          matchId: startData.matchId,
-          type: "" + startData.type,
-          lp: startData.lp
+          matchId: 22, //比赛id
+          type: 3, //比赛类型，1竞技场双人对战 2竞技场锦标赛 3欢乐场双人对战 4欢乐场锦标赛 5训练场双人对战 6训练场锦标赛
+          lp: 10000, //令牌数量
+          users: []
         };
-        console.log("请求创建游戏开始订单:", dataSend);
+        this.uidList.forEach(uid => {
+          let propId = this.propMap[uid];
+          let startData = this.matchDataMap[uid];
+          let propConf = PROP_LIST.find(conf => conf.id == propId);
+          dataSend.users.push({
+            djmoney: propConf.cost,
+            dj: propConf.name,
+            userId: uid
+          });
+          Object.assign(dataSend, {
+            matchId: startData.matchId,
+            type: "" + startData.type,
+            lp: startData.lp
+          });
+        });
+        console.log("=======请求开始游戏======", dataSend);
         socketManager
           .doAjax({
-            url: "/start",
+            url: "/batchstart",
             method: "post",
-            data: dataSend
+            data: dataSend,
+            noMd5: true
           })
           .then((e: any) => {
             console.log("创建游戏订单返回:", e);
             if (e.result == 1) {
-              this.orderMap[uid] = e.data;
-              let dataCost = {
-                orderId: e.data,
-                price: propConf.cost,
-                name: propConf.name
-              };
-              console.log("请求消耗道具:", dataCost);
-              socketManager.doAjax({
-                url: "/buy",
-                method: "post",
-                data: dataCost
+              // 赋值orderMap
+              this.orderMap = {};
+              e.data.forEach(confUser => {
+                this.orderMap[confUser.userId] = confUser.orderId;
               });
+              rsv(null);
+            } else {
+              // 错误
+              rej(e.msg);
             }
           });
-      }
+      }, 1000);
     });
   }
   doStartGame() {
-    this.doPay();
-
-    // 显示匹配成功动画
-    this.isStarted = true;
-    let userDataList = [];
-    this.uidList.forEach(uid => {
-      userDataList.push(socketManager.getUserInfoById(uid));
-    });
-    // 随机游戏内数据
-    let gameCtr = new GameManager(this.uidList, this);
-    gameCtr.doStart();
-    this.gameManagerList.push(gameCtr);
-    socketManager.sendMsgByUidList(
-      this.uidList,
-      PROTOCLE.SERVER.UPDATE_GAME_INFO,
-      {
-        gameInfo: gameCtr.gameInfo
-      }
-    );
-    setTimeout(() => {
-      socketManager.sendMsgByUidList(
-        this.uidList,
-        PROTOCLE.SERVER.SHOW_MATCH_SUCCESS,
-        {
-          userList: userDataList
-        }
-      );
-      setTimeout(() => {
-        // 广播下发游戏数据，进入游戏开始动画
+    this.doPay()
+      .then(e => {
+        // 显示匹配成功动画
+        this.isStarted = true;
+        let userDataList = [];
+        this.uidList.forEach(uid => {
+          userDataList.push(socketManager.getUserInfoById(uid));
+        });
+        // 随机游戏内数据
+        let gameCtr = new GameManager(this.uidList, this);
+        gameCtr.doStart();
+        this.gameManagerList.push(gameCtr);
         socketManager.sendMsgByUidList(
           this.uidList,
-          PROTOCLE.SERVER.SHOW_GAME_START
+          PROTOCLE.SERVER.UPDATE_GAME_INFO,
+          {
+            gameInfo: gameCtr.gameInfo
+          }
         );
-      }, (158 / 30) * 1000);
-    }, 2000);
+        setTimeout(() => {
+          socketManager.sendMsgByUidList(
+            this.uidList,
+            PROTOCLE.SERVER.SHOW_MATCH_SUCCESS,
+            {
+              userList: userDataList
+            }
+          );
+          setTimeout(() => {
+            // 广播下发游戏数据，进入游戏开始动画
+            socketManager.sendMsgByUidList(
+              this.uidList,
+              PROTOCLE.SERVER.SHOW_GAME_START
+            );
+          }, (158 / 30) * 1000);
+        }, 2000);
+      })
+      .catch(e => {
+        console.log("rej");
+        this.isStarted = false;
+        socketManager.sendErrByUidList(this.uidList, "startGame", e);
+        this.uidList.forEach(uid => {
+          this.leave(uid);
+          let ctrUser = socketManager.getUserCtrById(uid);
+          ctrUser.inRoomId = 0;
+        });
+      });
   }
+
   // 玩家离开
   leave(uid) {
     this.uidList = this.uidList.filter(uid1 => uid1 != uid);
