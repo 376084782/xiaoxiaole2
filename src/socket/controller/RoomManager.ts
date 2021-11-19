@@ -285,6 +285,7 @@ export default class RoomManager {
     } else {
       setTimeout(() => {
         if (this.uidList.length == 1) {
+          console.log(this.uidList.length,'llllll')
           this.addRobot(218, {
             matchId,
             type,
