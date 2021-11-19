@@ -66,26 +66,30 @@ export default class RoomManager {
           rank: 1,
           orderId: orderWinner
         });
-        socketManager.doAjax({
-          url: "/gameover",
-          method: "post",
-          data: {
-            rank: 1,
-            orderId: orderWinner
-          }
-        });
+        if (orderWinner) {
+          socketManager.doAjax({
+            url: "/gameover",
+            method: "post",
+            data: {
+              rank: 1,
+              orderId: orderWinner
+            }
+          });
+        }
         console.log("上报游戏结果", {
           rank: 2,
           orderId: orderLoser
         });
-        socketManager.doAjax({
-          url: "/gameover",
-          method: "post",
-          data: {
-            rank: 2,
-            orderId: orderLoser
-          }
-        });
+        if (orderLoser) {
+          socketManager.doAjax({
+            url: "/gameover",
+            method: "post",
+            data: {
+              rank: 2,
+              orderId: orderLoser
+            }
+          });
+        }
 
         socketManager.sendMsgByUidList(
           [uidWinner],
@@ -121,14 +125,16 @@ export default class RoomManager {
           rank: 0,
           orderId: orderLoser
         });
-        socketManager.doAjax({
-          url: "/gameover",
-          method: "post",
-          data: {
-            rank: 0,
-            orderId: orderLoser
-          }
-        });
+        if (orderLoser) {
+          socketManager.doAjax({
+            url: "/gameover",
+            method: "post",
+            data: {
+              rank: 0,
+              orderId: orderLoser
+            }
+          });
+        }
         socketManager.sendMsgByUidList(
           [uidLoser],
           PROTOCLE.SERVER.RANK_RESULT,
@@ -154,26 +160,30 @@ export default class RoomManager {
         rank: 1,
         orderId: orderWinner
       });
-      socketManager.doAjax({
-        url: "/gameover",
-        method: "post",
-        data: {
-          rank: 1,
-          orderId: orderWinner
-        }
-      });
+      if (orderWinner) {
+        socketManager.doAjax({
+          url: "/gameover",
+          method: "post",
+          data: {
+            rank: 1,
+            orderId: orderWinner
+          }
+        });
+      }
       console.log("上报游戏结果", {
         rank: 0,
         orderId: orderLoser
       });
-      socketManager.doAjax({
-        url: "/gameover",
-        method: "post",
-        data: {
-          rank: 0,
-          orderId: orderLoser
-        }
-      });
+      if (orderLoser) {
+        socketManager.doAjax({
+          url: "/gameover",
+          method: "post",
+          data: {
+            rank: 0,
+            orderId: orderLoser
+          }
+        });
+      }
       this.isStarted = false;
     }
   }
@@ -233,6 +243,11 @@ export default class RoomManager {
       gameCtr.askChuizi(uid, idx);
     }
   }
+  addRobot(uid, matchData) {
+    this.uidList = [uid];
+    this.matchDataMap[uid] = matchData;
+    this.propMap[uid] = Util.getRandomInt(1, 6);
+  }
   // 玩家加入
   join({ uid, propId, matchId, type, lp }) {
     if (this.isStarted) {
@@ -268,6 +283,15 @@ export default class RoomManager {
         this.doStartMatch();
       }
     } else {
+      setTimeout(() => {
+        if (this.uidList.length == 0) {
+          this.addRobot(218, {
+            matchId,
+            type,
+            lp
+          });
+        }
+      }, 10000);
       this.uidList.push(uid);
       socketManager.sendMsgByUidList([uid], PROTOCLE.SERVER.SHOW_MATCH_ENTER, {
         flag: true,
@@ -314,7 +338,7 @@ export default class RoomManager {
       })
       .catch(e => {
         console.log("rej");
-        socketManager.sendErrByUidList(this.uidList, "startGame", e);
+        socketManager.sendErrByUidList(this.uidList, "startGame", { msg: e });
         this.isStarted = false;
         this.uidList.forEach(uid => {
           this.leave(uid);
@@ -327,6 +351,8 @@ export default class RoomManager {
   doPay() {
     return new Promise((rsv, rej) => {
       setTimeout(() => {
+        rsv(null);
+        return;
         let dataSend = {
           matchId: 22, //比赛id
           type: 3, //比赛类型，1竞技场双人对战 2竞技场锦标赛 3欢乐场双人对战 4欢乐场锦标赛 5训练场双人对战 6训练场锦标赛
@@ -408,13 +434,18 @@ export default class RoomManager {
               this.uidList,
               PROTOCLE.SERVER.SHOW_GAME_START
             );
+            setTimeout(() => {
+              gameCtr.checkRobotTurn();
+            }, 5000);
           }, (158 / 30) * 1000);
         }, 2000);
       })
       .catch(e => {
         console.log("rej");
         this.isStarted = false;
-        socketManager.sendErrByUidList(this.uidList, "startGame", e);
+        socketManager.sendErrByUidList(this.uidList, "startGame", {
+          msg: e
+        });
         this.uidList.forEach(uid => {
           this.leave(uid);
           let ctrUser = socketManager.getUserCtrById(uid);

@@ -13,21 +13,24 @@ export default class UserManager {
   // 当前所处的阶段
   inRoomId: number = 0;
   score = 0;
-  constructor({ avatar, nickname, uid, sex, score }) {
+  isRobot = false;
+  constructor({ avatar, nickname, uid, sex, score, isRobot }) {
     this.avatar = avatar;
     this.nickname = nickname;
     this.uid = uid;
     this.sex = sex || 1;
     this.score = score || 0;
+    this.isRobot = isRobot || false;
   }
   getInfo() {
     return {
+      isRobot: this.isRobot,
       avatar: this.avatar,
       nickname: this.nickname,
       sex: this.sex,
       uid: this.uid,
       inRoomId: this.inRoomId,
-      score:this.score
+      score: this.score
     };
   }
   updateToClient() {

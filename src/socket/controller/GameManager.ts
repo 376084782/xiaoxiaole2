@@ -21,6 +21,7 @@ export default class GameManager {
     winner: 0,
     loser: 0,
     data1: {
+      isRobot: false,
       orderId: 0,
       propData: {},
       shuffle: 1,
@@ -34,6 +35,7 @@ export default class GameManager {
       uid: 1
     },
     data2: {
+      isRobot: false,
       orderId: 0,
       propData: {},
       shuffle: 1,
@@ -67,6 +69,7 @@ export default class GameManager {
       targetData.avatar = userInfo.avatar;
       targetData.uid = userInfo.uid;
       targetData.nickname = userInfo.nickname;
+      targetData.isRobot = userInfo.isRobot;
     });
   }
   doStart() {
@@ -128,6 +131,10 @@ export default class GameManager {
         });
       }
     }
+  }
+  getCurrentUser() {
+    let color = this.getCurrentColor();
+    return color == 1 ? this.gameInfo.data1 : this.gameInfo.data2;
   }
   getCurrentColor() {
     let turn = this.gameInfo.turn + (this.gameInfo.round % 2 == 1 ? 0 : 2);
@@ -285,16 +292,74 @@ export default class GameManager {
     } else {
       this.flagAnimating = true;
       this.doAfter(delay, () => {
-        this.flagAnimating = false;
-        this.ctrRoom && this.ctrRoom.checkAfterTurn();
-        socketManager.sendMsgByUidList(
-          this.uidList,
-          PROTOCLE.SERVER.GAME_CHANGE_POWER,
-          {
-            gameInfo: this.gameInfo
-          }
-        );
+        let listCanMove = this.findGridToMove();
+        if (listCanMove.length > 0) {
+          this.flagAnimating = false;
+          this.ctrRoom && this.ctrRoom.checkAfterTurn();
+          socketManager.sendMsgByUidList(
+            this.uidList,
+            PROTOCLE.SERVER.GAME_CHANGE_POWER,
+            {
+              gameInfo: this.gameInfo
+            }
+          );
+          // 判断当前可操作方如果是机器人，调用机器人方法进行操作
+          this.checkRobotTurn();
+        } else {
+          // 随机一次
+          let { listShuffle, listData } = this.doShuffle();
+          socketManager.sendMsgByUidList(
+            this.uidList,
+            PROTOCLE.SERVER.SHUFFLE,
+            {
+              listShuffle,
+              gameInfo: this.gameInfo,
+              seat: 0
+            }
+          );
+          setTimeout(() => {
+            this.goNextTurn(this.gameInfo.listData, false, false, 0);
+          }, 1400);
+        }
       });
+    }
+  }
+  checkRobotTurn() {
+    let data = this.getCurrentUser();
+    if (data.isRobot) {
+      // 判断机器人动作
+      console.log("机器人动作");
+      // 检查可以消除的数据进行消除
+      setTimeout(() => {
+        // 如果技能满了，使用技能
+        if (data.skillPrg >= this.gameInfo.skillNeed) {
+          this.useProp(data.propId, data.uid);
+        } else {
+          let listCanMove = this.findGridToMove();
+          let listCanMoveWithTargetColor = listCanMove.filter(
+            e => e.color == data.gridType
+          );
+          let listCanMoveWithoutTargetColor = listCanMove.filter(
+            e => e.color != data.gridType
+          );
+          let flag = Math.random() > 0.7;
+          let list = [];
+          if (flag) {
+            list =
+              listCanMoveWithTargetColor.length > 0
+                ? listCanMoveWithTargetColor
+                : listCanMoveWithoutTargetColor;
+          } else {
+            list =
+              listCanMoveWithoutTargetColor.length > 0
+                ? listCanMoveWithoutTargetColor
+                : listCanMoveWithTargetColor;
+          }
+          let confIdx = Util.getRandom(0, list.length);
+          let conf = list[confIdx];
+          this.doMove(conf.from, conf.to, data.uid);
+        }
+      }, 2000 + Math.random() * 6000);
     }
   }
   doFinishGame() {
@@ -363,6 +428,165 @@ export default class GameManager {
     return listData;
   }
 
+  findGridToMove() {
+    let listCanMove = [];
+    let listData = this.gameInfo.listData;
+    listData.forEach((row, y) => {
+      row.forEach((grid, x) => {
+        let dirList = [
+          // 第一格下移
+          {
+            list: [
+              [0, 0],
+              [1, 1],
+              [2, 1]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x, y + 1),
+            color: grid
+          },
+          // 第一格上移
+          {
+            list: [
+              [0, 0],
+              [1, -1],
+              [2, -1]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x, y - 1),
+            color: grid
+          },
+          // 第二格下移
+          {
+            list: [
+              [-1, 1],
+              [0, 0],
+              [1, 1]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x, y + 1),
+            color: grid
+          },
+          // 第二格上移
+          {
+            list: [
+              [-1, -1],
+              [0, 0],
+              [1, -1]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x, y - 1),
+            color: grid
+          },
+          // 第三格上移
+          {
+            list: [
+              [-2, -1],
+              [-1, -1],
+              [0, 0]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x, y - 1),
+            color: grid
+          },
+          // 第三格下移
+          {
+            list: [
+              [-1, 1],
+              [0, 0],
+              [1, 1]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x, y + 1),
+            color: grid
+          },
+          // 第一格左移
+          {
+            list: [
+              [0, 0],
+              [-1, 1],
+              [-1, 2]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x - 1, y),
+            color: grid
+          },
+          // 第一格右移
+          {
+            list: [
+              [0, 0],
+              [1, 1],
+              [1, 2]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x + 1, y),
+            color: grid
+          },
+          // 第二格左移
+          {
+            list: [
+              [-1, -1],
+              [0, 0],
+              [-1, 1]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x - 1, y),
+            color: grid
+          },
+          // 第二格右移
+          {
+            list: [
+              [1, -1],
+              [0, 0],
+              [1, 1]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x + 1, y),
+            color: grid
+          },
+          // 第三格左移
+          {
+            list: [
+              [-1, -2],
+              [-1, -1],
+              [0, 0]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x - 1, y),
+            color: grid
+          },
+          // 第三格右移
+          {
+            list: [
+              [1, -2],
+              [1, -1],
+              [0, 0]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x + 1, y),
+            color: grid
+          }
+        ];
+        dirList.forEach(conf => {
+          let flag = true;
+          conf.list.forEach(([x1, y1]) => {
+            if (!listData[y + y1]) {
+              flag = false;
+            } else if (!listData[y + y1][x + x1]) {
+              flag = false;
+            } else if (listData[y + y1][x + x1] != grid) {
+              flag = false;
+            }
+          });
+          if (flag) {
+            listCanMove.push(conf);
+          }
+        });
+      });
+    });
+    console.log(listCanMove);
+    return listCanMove;
+  }
   getMoveData(idx1, idx2) {
     let listAction = [];
     let resExchange = this.exchange(idx1, idx2);

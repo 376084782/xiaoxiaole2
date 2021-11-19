@@ -113,29 +113,20 @@ export default class socketManager {
     if (!this.userMap[uid]) {
       this.userMap[uid] = new UserManager({
         avatar:
-          "https://img0.baidu.com/it/u=199023397,1701150760&fm=26&fmt=auto",
+        "https://shebz.oss-cn-qingdao.aliyuncs.com/shebz/cb6c5c121bea4ef591660087f48f9f53494030.png",
         nickname: "机器人" + uid,
         uid,
         sex: 1,
-        score: 0
+        score: Util.getRandomInt(1000, 4000),
+        isRobot: true
       });
     }
     let ctrUser = this.userMap[uid];
     return ctrUser;
   }
   static getUserInfoById(uid) {
-    if (!this.userMap[uid]) {
-      this.userMap[uid] = new UserManager({
-        avatar:
-          "https://img0.baidu.com/it/u=199023397,1701150760&fm=26&fmt=auto",
-        nickname: "机器人" + uid,
-        uid,
-        sex: 1,
-        score: 0
-      });
-    }
-    let ctrUser = this.userMap[uid];
-    return ctrUser.getInfo();
+    let ctr = this.getUserCtrById(uid);
+    return ctr.getInfo();
   }
   static listen() {
     this.io.on("connect", this.onConnect);
@@ -156,6 +147,12 @@ export default class socketManager {
     }
     let data = res.data;
     let type = res.type;
+    if (this.userSockets[uid] && this.userSockets[uid] != socket) {
+      // 已存在正在连接中的，提示被顶
+      socketManager.sendErrByUidList([uid], "connect", {
+        msg: "账号已被登录，请刷新或退出游戏"
+      });
+    }
     this.userSockets[uid] = socket;
 
     let userCtr = this.getUserCtrById(uid);
