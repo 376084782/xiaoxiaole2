@@ -285,11 +285,13 @@ export default class RoomManager {
     } else {
       setTimeout(() => {
         if (this.uidList.length == 1) {
-          console.log(this.uidList.length,'llllll')
-          this.addRobot(218, {
+          console.log(this.uidList.length, "llllll");
+          this.join({
+            uid: 218,
             matchId,
             type,
-            lp
+            lp,
+            propId: Util.getRandomInt(1, 6)
           });
         }
       }, 10000);
