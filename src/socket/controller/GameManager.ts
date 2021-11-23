@@ -216,7 +216,6 @@ export default class GameManager {
     if (this.gameInfo.round % 2 == 1) {
       if (!this.flagRoundAction) {
         this.countNoAction1++;
-        console.log("+++++++1");
       } else {
         this.countNoAction1 = 0;
       }
@@ -268,7 +267,6 @@ export default class GameManager {
         this.gameInfo.round > this.gameInfo.maxRound &&
         this.gameInfo.data1.score != this.gameInfo.data2.score
       ) {
-        console.log("======isEnd=========", this.gameInfo.round);
         isEnd = true;
         if (this.gameInfo.data1.score > this.gameInfo.data2.score) {
           this.gameInfo.winner = this.gameInfo.data1.uid;
@@ -324,13 +322,14 @@ export default class GameManager {
       });
     }
   }
+  timerRobot;
   checkRobotTurn() {
     let data = this.getCurrentUser();
     if (data.isRobot) {
       // 判断机器人动作
-      console.log("机器人动作");
       // 检查可以消除的数据进行消除
-      setTimeout(() => {
+      clearTimeout(this.timerRobot);
+      this.timerRobot = setTimeout(() => {
         // 如果技能满了，使用技能
         if (data.skillPrg >= this.gameInfo.skillNeed) {
           this.useProp(data.propId, data.uid);
@@ -396,7 +395,7 @@ export default class GameManager {
     }, time);
   }
 
-  checkMovePower() {}
+  checkMovePower() { }
 
   updateListData(listData) {
     this.gameInfo.listData = listData;
@@ -574,7 +573,7 @@ export default class GameManager {
               flag = false;
             } else if (!listData[y + y1][x + x1]) {
               flag = false;
-            } else if (listData[y + y1][x + x1] != grid) {
+            } else if (listData[y + y1][x + x1] % 100 != grid % 100) {
               flag = false;
             }
           });
@@ -584,7 +583,6 @@ export default class GameManager {
         });
       });
     });
-    console.log(listCanMove);
     return listCanMove;
   }
   getMoveData(idx1, idx2) {
@@ -622,6 +620,12 @@ export default class GameManager {
     if (this.gameInfo.isFinish) {
       return;
     }
+    let color = this.gameInfo.seatMap[uid];
+    let colorCurrent = this.getCurrentColor();
+    if (color != colorCurrent) {
+      console.log('无操作权')
+      return
+    }
     let extraData: any = {};
     let listDel = [];
     switch (id) {
@@ -648,91 +652,88 @@ export default class GameManager {
       }
     }
 
-    let color = this.gameInfo.seatMap[uid];
-    let colorCurrent = this.getCurrentColor();
-    if (color == colorCurrent) {
-      // 清空技能能量
-      let currentTargetData = this.getCurrentData();
-      if (currentTargetData.skillPrg >= this.gameInfo.skillNeed) {
-        currentTargetData.skillPrg = 0;
-        clearTimeout(this.timer);
-        if (id == 4) {
-          // 帽子
-          // 随机塞三个道具,一个闪电，两个箭头
-          let listCanChangeIdxs = [];
-          this.gameInfo.listData.forEach((list, y) => {
-            list.forEach((grid, x) => {
-              if (grid < 100) {
-                listCanChangeIdxs.push(this.xyToIdx(x, y));
-              }
-            });
-          });
-          listCanChangeIdxs = _.shuffle(listCanChangeIdxs);
-          let listWillChange = listCanChangeIdxs.slice(0, 3);
-          let listTarget = [];
-          listTarget.push(400 + Util.getRandomInt(1, 6));
-          listTarget.push(100 + Util.getRandomInt(1, 6));
-          listTarget.push(200 + Util.getRandomInt(1, 6));
-          let listChange = [];
-          listWillChange.forEach((grid, i) => {
-            listChange.push([grid, listTarget[i]]);
-            this.changeGrid(grid, listTarget[i]);
-          });
-          extraData.listChange = listChange;
-        } else if (id == 6) {
-          // 油漆
-          // 随机6个变色
-          let listCanChangeIdxs = [];
-          let colorList = [];
-          for (let i = 0; i < 6; i++) {
-            let color = i + 1;
-            if (color != currentTargetData.gridType) {
-              colorList.push(color);
+    // 清空技能能量
+    let currentTargetData = this.getCurrentData();
+    if (currentTargetData.skillPrg >= this.gameInfo.skillNeed) {
+      currentTargetData.skillPrg = 0;
+      clearTimeout(this.timer);
+      if (id == 4) {
+        // 帽子
+        // 随机塞三个道具,一个闪电，两个箭头
+        let listCanChangeIdxs = [];
+        this.gameInfo.listData.forEach((list, y) => {
+          list.forEach((grid, x) => {
+            if (grid < 100) {
+              listCanChangeIdxs.push(this.xyToIdx(x, y));
             }
-          }
-          let targetGridColor =
-            colorList[Util.getRandomInt(0, colorList.length - 1)];
-          this.gameInfo.listData.forEach((list, y) => {
-            list.forEach((grid, x) => {
-              if (grid < 100 && grid != targetGridColor) {
-                listCanChangeIdxs.push(this.xyToIdx(x, y));
-              }
-            });
           });
-          listCanChangeIdxs = _.shuffle(listCanChangeIdxs);
-          let listChangeColor = listCanChangeIdxs.slice(0, 6);
-          listChangeColor.forEach(idx => {
-            this.changeGrid(idx, targetGridColor);
-          });
-          extraData.listChangeColor = listChangeColor;
-          extraData.targetColor = targetGridColor;
-          extraData.listData = this.gameInfo.listData;
-        }
-
-        let listAction = this.doDelByProp(listDel);
-
-        let flagExtraMove = !!listAction.find(
-          e => e.data && e.data.flagExtraMove
-        );
-        socketManager.sendMsgByUidList(this.uidList, PROTOCLE.SERVER.USE_PROP, {
-          crashData: { id, color, listAction, extraData, flagExtraMove },
-          gameInfo: this.gameInfo,
-          seat: colorCurrent
         });
-        let map = {
-          1: 42 / 30,
-          2: 125 / 30,
-          3: 60 / 30,
-          4: 112 / 30,
-          5: 85 / 30,
-          6: 120 / 30
-        };
-
-        this.goNextAfterAction(listAction, false, map[id]);
-
-        return { id, listAction };
+        listCanChangeIdxs = _.shuffle(listCanChangeIdxs);
+        let listWillChange = listCanChangeIdxs.slice(0, 3);
+        let listTarget = [];
+        listTarget.push(400 + Util.getRandomInt(1, 6));
+        listTarget.push(100 + Util.getRandomInt(1, 6));
+        listTarget.push(200 + Util.getRandomInt(1, 6));
+        let listChange = [];
+        listWillChange.forEach((grid, i) => {
+          listChange.push([grid, listTarget[i]]);
+          this.changeGrid(grid, listTarget[i]);
+        });
+        extraData.listChange = listChange;
+      } else if (id == 6) {
+        // 油漆
+        // 随机6个变色
+        let listCanChangeIdxs = [];
+        let colorList = [];
+        for (let i = 0; i < 6; i++) {
+          let color = i + 1;
+          if (color != currentTargetData.gridType) {
+            colorList.push(color);
+          }
+        }
+        let targetGridColor =
+          colorList[Util.getRandomInt(0, colorList.length - 1)];
+        this.gameInfo.listData.forEach((list, y) => {
+          list.forEach((grid, x) => {
+            if (grid < 100 && grid != targetGridColor) {
+              listCanChangeIdxs.push(this.xyToIdx(x, y));
+            }
+          });
+        });
+        listCanChangeIdxs = _.shuffle(listCanChangeIdxs);
+        let listChangeColor = listCanChangeIdxs.slice(0, 6);
+        listChangeColor.forEach(idx => {
+          this.changeGrid(idx, targetGridColor);
+        });
+        extraData.listChangeColor = listChangeColor;
+        extraData.targetColor = targetGridColor;
+        extraData.listData = this.gameInfo.listData;
       }
+
+      let listAction = this.doDelByProp(listDel);
+
+      let flagExtraMove = !!listAction.find(
+        e => e.data && e.data.flagExtraMove
+      );
+      socketManager.sendMsgByUidList(this.uidList, PROTOCLE.SERVER.USE_PROP, {
+        crashData: { id, color, listAction, extraData, flagExtraMove },
+        gameInfo: this.gameInfo,
+        seat: colorCurrent
+      });
+      let map = {
+        1: 42 / 30,
+        2: 125 / 30,
+        3: 60 / 30,
+        4: 112 / 30,
+        5: 85 / 30,
+        6: 120 / 30
+      };
+
+      this.goNextAfterAction(listAction, false, map[id]);
+
+      return { id, listAction };
     }
+
   }
   getCurrentData() {
     let currentSeat = this.getCurrentColor();
@@ -875,9 +876,18 @@ export default class GameManager {
     });
 
     let valsDeled = this.delGrids(listWillDel);
-    let dataDelBySpecialGrid = this.checkSpecialGridDeleted();
-    valsDeled = valsDeled.concat(this.delGrids(dataDelBySpecialGrid.list));
-    listWillDel = _.uniq(listWillDel.concat(dataDelBySpecialGrid.list));
+    let dataDelBySpecialGrid = { list: [], listAni: [] }
+    while (true) {
+      let data2 = this.checkSpecialGridDeleted();
+      if (data2.list.length == 0) {
+        break
+      }
+      dataDelBySpecialGrid.list = dataDelBySpecialGrid.list.concat(data2.list);
+      dataDelBySpecialGrid.listAni = dataDelBySpecialGrid.listAni.concat(data2.listAni);
+      valsDeled = valsDeled.concat(this.delGrids(data2.list));
+      listWillDel = _.uniq(listWillDel.concat(data2.list));
+
+    }
 
     listWillChange.forEach(conf => {
       this.changeGrid(conf.idx, conf.value);
@@ -946,9 +956,9 @@ export default class GameManager {
       this.gameInfo.listData[pos1.y][pos1.x],
       this.gameInfo.listData[pos2.y][pos2.x]
     ] = [
-      this.gameInfo.listData[pos2.y][pos2.x],
-      this.gameInfo.listData[pos1.y][pos1.x]
-    ];
+        this.gameInfo.listData[pos2.y][pos2.x],
+        this.gameInfo.listData[pos1.y][pos1.x]
+      ];
     return [
       [idx1, idx2],
       [idx2, idx1]
@@ -1010,7 +1020,7 @@ export default class GameManager {
     return list;
   }
   isMoreThanInX(count, list) {
-    return !!list.find(grid1 => {
+    return list.find(grid1 => {
       let xy1 = this.idxToXY(grid1);
       return (
         list.filter(grid => {
@@ -1018,10 +1028,10 @@ export default class GameManager {
           return xy.y == xy1.y;
         }).length >= count
       );
-    });
+    }) != undefined;
   }
   isMoreThanInY(count, list) {
-    return !!list.find(grid1 => {
+    return list.find(grid1 => {
       let xy1 = this.idxToXY(grid1);
       return (
         list.filter(grid => {
@@ -1029,7 +1039,7 @@ export default class GameManager {
           return xy.x == xy1.x;
         }).length >= count
       );
-    });
+    }) != undefined;
   }
   isMoreThanInLine(count, list) {
     // x轴上是否有三个以上相连
@@ -1245,7 +1255,6 @@ export default class GameManager {
     let xy = this.idxToXY(idx);
     this.gameInfo.listData[xy.y][xy.x] = value;
   }
-
   // 检查补满格子
   checkFall() {
     let listMap = this.gameInfo.listData;
@@ -1312,7 +1321,6 @@ export default class GameManager {
       }
       res = res.concat(mapMove);
     }
-
     return res;
   }
 

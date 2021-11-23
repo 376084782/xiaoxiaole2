@@ -287,7 +287,7 @@ export default class RoomManager {
         if (this.uidList.length == 1) {
           console.log(this.uidList.length, "llllll");
           this.join({
-            uid: 218,
+            uid: 2000080,
             matchId,
             type,
             lp,
@@ -334,13 +334,11 @@ export default class RoomManager {
     // 房间内的人都扣除对应的道具
     this.doPay()
       .then(e => {
-        console.log("rsv");
         this.isStarted = true;
         this.waitingList = this.uidList;
         this.goNextRankRound();
       })
       .catch(e => {
-        console.log("rej");
         socketManager.sendErrByUidList(this.uidList, "startGame", { msg: e });
         this.isStarted = false;
         this.uidList.forEach(uid => {
@@ -444,7 +442,6 @@ export default class RoomManager {
         }, 2000);
       })
       .catch(e => {
-        console.log("rej");
         this.isStarted = false;
         socketManager.sendErrByUidList(this.uidList, "startGame", {
           msg: e

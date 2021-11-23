@@ -203,7 +203,6 @@ export default class socketManager {
           }
           let targetRoom: RoomManager;
           targetRoom = this.getRoomCanJoin(type, lp, isMatch);
-          console.log(targetRoom.roomId, targetRoom.isMatch, isMatch, "mmmmm");
 
           targetRoom.join({
             uid,
