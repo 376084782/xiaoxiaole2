@@ -433,7 +433,18 @@ export default class GameManager {
     listData.forEach((row, y) => {
       row.forEach((grid, x) => {
         let dirList = [
-          // 第一格下移
+          // 第一格右移 成横
+          {
+            list: [
+              [0, 0],
+              [2, 0],
+              [3, 0]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x, y + 1),
+            color: grid
+          },
+          // 第一格下移 成横
           {
             list: [
               [0, 0],
@@ -444,7 +455,7 @@ export default class GameManager {
             to: this.xyToIdx(x, y + 1),
             color: grid
           },
-          // 第一格上移
+          // 第一格上移 成横
           {
             list: [
               [0, 0],
@@ -455,7 +466,7 @@ export default class GameManager {
             to: this.xyToIdx(x, y - 1),
             color: grid
           },
-          // 第二格下移
+          // 第二格下移 成横
           {
             list: [
               [-1, 1],
@@ -466,7 +477,7 @@ export default class GameManager {
             to: this.xyToIdx(x, y + 1),
             color: grid
           },
-          // 第二格上移
+          // 第二格上移 成横
           {
             list: [
               [-1, -1],
@@ -477,7 +488,7 @@ export default class GameManager {
             to: this.xyToIdx(x, y - 1),
             color: grid
           },
-          // 第三格上移
+          // 第三格上移 成横
           {
             list: [
               [-2, -1],
@@ -488,18 +499,40 @@ export default class GameManager {
             to: this.xyToIdx(x, y - 1),
             color: grid
           },
-          // 第三格下移
+          // 第三格下移 成横
           {
             list: [
+              [-2, 1],
               [-1, 1],
-              [0, 0],
-              [1, 1]
+              [0, 0]
             ],
             from: this.xyToIdx(x, y),
             to: this.xyToIdx(x, y + 1),
             color: grid
           },
-          // 第一格左移
+          // 第三格左移 成横
+          {
+            list: [
+              [-3, 0],
+              [-2, 0],
+              [0, 0]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x, y + 1),
+            color: grid
+          },
+          // 第一格下移 成竖
+          {
+            list: [
+              [0, 0],
+              [0, 2],
+              [0, 3]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x - 1, y),
+            color: grid
+          },
+          // 第一格左移 成竖
           {
             list: [
               [0, 0],
@@ -510,7 +543,7 @@ export default class GameManager {
             to: this.xyToIdx(x - 1, y),
             color: grid
           },
-          // 第一格右移
+          // 第一格右移 成竖
           {
             list: [
               [0, 0],
@@ -521,7 +554,7 @@ export default class GameManager {
             to: this.xyToIdx(x + 1, y),
             color: grid
           },
-          // 第二格左移
+          // 第二格左移 成竖
           {
             list: [
               [-1, -1],
@@ -532,7 +565,7 @@ export default class GameManager {
             to: this.xyToIdx(x - 1, y),
             color: grid
           },
-          // 第二格右移
+          // 第二格右移 成竖
           {
             list: [
               [1, -1],
@@ -543,7 +576,18 @@ export default class GameManager {
             to: this.xyToIdx(x + 1, y),
             color: grid
           },
-          // 第三格左移
+          // 第三格上移 成竖
+          {
+            list: [
+              [0, -3],
+              [0, -2],
+              [0, 0]
+            ],
+            from: this.xyToIdx(x, y),
+            to: this.xyToIdx(x - 1, y),
+            color: grid
+          },
+          // 第三格左移 成竖
           {
             list: [
               [-1, -2],
@@ -554,7 +598,7 @@ export default class GameManager {
             to: this.xyToIdx(x - 1, y),
             color: grid
           },
-          // 第三格右移
+          // 第三格右移 成竖
           {
             list: [
               [1, -2],
