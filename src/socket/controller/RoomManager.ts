@@ -283,18 +283,19 @@ export default class RoomManager {
         this.doStartMatch();
       }
     } else {
-      setTimeout(() => {
-        if (this.uidList.length == 1) {
-          console.log(this.uidList.length, "llllll");
-          this.join({
-            uid: 2000080,
-            matchId,
-            type,
-            lp,
-            propId: Util.getRandomInt(1, 6)
-          });
-        }
-      }, 10000);
+      if (matchId == 0) {
+        setTimeout(() => {
+          if (this.uidList.length == 1) {
+            this.join({
+              uid: 10000000000000,
+              matchId,
+              type,
+              lp,
+              propId: Util.getRandomInt(1, 6)
+            });
+          }
+        }, 10000);
+      }
       this.uidList.push(uid);
       socketManager.sendMsgByUidList([uid], PROTOCLE.SERVER.SHOW_MATCH_ENTER, {
         flag: true,
@@ -352,8 +353,6 @@ export default class RoomManager {
   doPay() {
     return new Promise((rsv, rej) => {
       setTimeout(() => {
-        rsv(null);
-        return;
         let dataSend = {
           matchId: 22, //比赛id
           type: 3, //比赛类型，1竞技场双人对战 2竞技场锦标赛 3欢乐场双人对战 4欢乐场锦标赛 5训练场双人对战 6训练场锦标赛
@@ -364,16 +363,18 @@ export default class RoomManager {
           let propId = this.propMap[uid];
           let startData = this.matchDataMap[uid];
           let propConf = PROP_LIST.find(conf => conf.id == propId);
-          dataSend.users.push({
-            djmoney: propConf.cost,
-            dj: propConf.name,
-            userId: uid
-          });
-          Object.assign(dataSend, {
-            matchId: startData.matchId,
-            type: "" + startData.type,
-            lp: startData.lp
-          });
+          if (uid < 10000000000000) {
+            dataSend.users.push({
+              djmoney: propConf.cost,
+              dj: propConf.name,
+              userId: uid
+            });
+            Object.assign(dataSend, {
+              matchId: startData.matchId,
+              type: "" + startData.type,
+              lp: startData.lp
+            });
+          }
         });
         console.log("=======请求开始游戏======", dataSend);
         socketManager
