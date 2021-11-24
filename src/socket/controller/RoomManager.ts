@@ -4,6 +4,7 @@ import _ from "lodash";
 import PROTOCLE from "../config/PROTOCLE";
 import GameManager from "./GameManager";
 import { MATCH_NEED, PROP_LIST } from "../config";
+import RobotManager from "./RobotManager";
 // 游戏内玩家全部离线的房间，自动清除
 export default class RoomManager {
   type = 0;
@@ -287,7 +288,7 @@ export default class RoomManager {
         setTimeout(() => {
           if (this.uidList.length == 1) {
             this.join({
-              uid: 10000000000000,
+              uid: 10000000000000 + Util.getRandomInt(0, RobotManager.listName.length - 1),
               matchId,
               type,
               lp,

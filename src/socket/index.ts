@@ -3,6 +3,7 @@ import PROTOCLE from "./config/PROTOCLE";
 import UserManager from "./controller/UserManager";
 import { PEOPLE_EACH_GAME_MAX, MATCH_NEED } from "./config";
 import Util from "./Util";
+import RobotManager from "./controller/RobotManager";
 // import $ from "jquery";
 
 var JSEncrypt = require("node-jsencrypt");
@@ -105,15 +106,31 @@ export default class socketManager {
       }
     });
   }
+  static initRobot() {
+    this.userMap = [];
+    RobotManager.listName.forEach((name, i) => {
+      let uid = 10000000000000 + i
+      this.userMap[uid] = new UserManager({
+        avatar: `https://oss.yipeng.online/avatar/图片${i + 1}.jpg`,
+        nickname: name,
+        uid,
+        sex: 1,
+        score: Util.getRandomInt(1000, 4000),
+        isRobot: true
+      })
+    })
+  }
   static init(io) {
     this.io = io;
+    this.initRobot()
     this.listen();
+
   }
   static getUserCtrById(uid) {
     if (!this.userMap[uid]) {
       this.userMap[uid] = new UserManager({
         avatar:
-        "https://shebz.oss-cn-qingdao.aliyuncs.com/shebz/cb6c5c121bea4ef591660087f48f9f53494030.png",
+          "https://shebz.oss-cn-qingdao.aliyuncs.com/shebz/cb6c5c121bea4ef591660087f48f9f53494030.png",
         nickname: "机器人" + uid,
         uid,
         sex: 1,
