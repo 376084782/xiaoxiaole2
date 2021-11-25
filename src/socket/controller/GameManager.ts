@@ -356,7 +356,9 @@ export default class GameManager {
           }
           let confIdx = Util.getRandom(0, list.length);
           let conf = list[confIdx];
-          this.doMove(conf.from, conf.to, data.uid);
+          if (conf) {
+            this.doMove(conf.from, conf.to, data.uid);
+          }
         }
       }, 2000 + Math.random() * 6000);
     }
