@@ -39,7 +39,7 @@ export const PROP_LIST = [
     name: "毒",
     cardBg: "卡-灰",
     icon: "毒气",
-    cost: 100,
+    cost: 300,
     aniNameInMission: "duqi"
   },
   {
