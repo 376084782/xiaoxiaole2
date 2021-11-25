@@ -443,7 +443,7 @@ export default class GameManager {
               [3, 0]
             ],
             from: this.xyToIdx(x, y),
-            to: this.xyToIdx(x, y + 1),
+            to: this.xyToIdx(x+1, y),
             color: grid
           },
           // 第一格下移 成横
@@ -520,7 +520,7 @@ export default class GameManager {
               [0, 0]
             ],
             from: this.xyToIdx(x, y),
-            to: this.xyToIdx(x, y + 1),
+            to: this.xyToIdx(x-1, y ),
             color: grid
           },
           // 第一格下移 成竖
@@ -531,7 +531,7 @@ export default class GameManager {
               [0, 3]
             ],
             from: this.xyToIdx(x, y),
-            to: this.xyToIdx(x - 1, y),
+            to: this.xyToIdx(x , y+1),
             color: grid
           },
           // 第一格左移 成竖
@@ -586,7 +586,7 @@ export default class GameManager {
               [0, 0]
             ],
             from: this.xyToIdx(x, y),
-            to: this.xyToIdx(x - 1, y),
+            to: this.xyToIdx(x , y-1),
             color: grid
           },
           // 第三格左移 成竖
