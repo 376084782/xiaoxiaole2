@@ -21,20 +21,22 @@ export default class socketManager {
   static userSockets = {};
   static userMap: UserManager[] = [];
   static aliveRoomList: RoomManager[] = [];
-  static getRoomCanJoin(type, lp, isMatch = false): RoomManager {
+  static getRoomCanJoin({ type, lp, roomId, matchId, isMatch = false }): RoomManager {
     // 检查当前已存在的房间中 公开的，人未满的,未开始游戏的
     let list = this.aliveRoomList.filter((roomCtr: RoomManager) => {
       return (
         roomCtr.type === type &&
         roomCtr.lp === lp &&
+        roomCtr.matchId === matchId &&
         roomCtr.isMatch === isMatch &&
+        roomCtr.roomId === roomId &&
         roomCtr.isPublic &&
         roomCtr.uidList.length < (isMatch ? MATCH_NEED : 2) &&
         !roomCtr.isStarted
       );
     });
     if (list.length == 0) {
-      let roomNew = new RoomManager(isMatch, type, lp);
+      let roomNew = new RoomManager({ isMatch, type, lp, matchId, roomId });
       this.aliveRoomList.push(roomNew);
       return roomNew;
     } else {
@@ -209,7 +211,7 @@ export default class socketManager {
       }
       case PROTOCLE.CLIENT.MATCH: {
         // 参与或者取消匹配
-        let { flag, isMatch, type, lp, matchId } = data;
+        let { flag, isMatch, type, lp, matchId, roomId } = data;
         if (flag) {
           if (roomCtr) {
             this.sendErrByUidList([userCtr.uid], PROTOCLE.CLIENT.MATCH, {
@@ -219,7 +221,7 @@ export default class socketManager {
             return;
           }
           let targetRoom: RoomManager;
-          targetRoom = this.getRoomCanJoin(type, lp, isMatch);
+          targetRoom = this.getRoomCanJoin({ type, lp, isMatch, matchId, roomId });
 
           targetRoom.join({
             uid,

@@ -9,6 +9,8 @@ import RobotManager from "./RobotManager";
 export default class RoomManager {
   type = 0;
   lp = 0;
+  matchId = 0;
+  withRobot = false;
 
   isMatch = false;
   roomId = 1;
@@ -226,11 +228,13 @@ export default class RoomManager {
     }
     this.checkAfterTurn();
   }
-  constructor(isMatch, type, lp) {
+  constructor({ isMatch, type, lp, matchId, roomId }) {
+    this.withRobot = !roomId && matchId == 0 && !isMatch
     this.isMatch = isMatch;
     this.type = type;
+    this.matchId = matchId;
     this.lp = lp;
-    this.roomId = Util.getUniqId();
+    this.roomId = roomId ? roomId :'a'+ Util.getUniqId();
   }
   askShuffle(uid) {
     let gameCtr = this.getGameCtr(uid);
@@ -249,6 +253,18 @@ export default class RoomManager {
     this.matchDataMap[uid] = matchData;
     this.propMap[uid] = Util.getRandomInt(1, 6);
   }
+
+  // 玩家离开
+  leave(uid) {
+    clearTimeout(this.timerRobotIn)
+    this.uidList = this.uidList.filter(uid1 => uid1 != uid);
+    if (!this.isStarted && !this.isMatch) {
+      socketManager.sendMsgByUidList([uid], PROTOCLE.SERVER.SHOW_MATCH_ENTER, {
+        flag: false
+      });
+    }
+  }
+  timerRobotIn;
   // 玩家加入
   join({ uid, propId, matchId, type, lp }) {
     if (this.isStarted) {
@@ -284,8 +300,9 @@ export default class RoomManager {
         this.doStartMatch();
       }
     } else {
-      if (matchId == 0) {
-        setTimeout(() => {
+      if (this.withRobot) {
+        clearTimeout(this.timerRobotIn)
+        this.timerRobotIn = setTimeout(() => {
           if (this.uidList.length == 1) {
             this.join({
               uid: 10000000000000 + Util.getRandomInt(0, RobotManager.listName.length - 1),
@@ -456,15 +473,6 @@ export default class RoomManager {
       });
   }
 
-  // 玩家离开
-  leave(uid) {
-    this.uidList = this.uidList.filter(uid1 => uid1 != uid);
-    if (!this.isStarted && !this.isMatch) {
-      socketManager.sendMsgByUidList([uid], PROTOCLE.SERVER.SHOW_MATCH_ENTER, {
-        flag: false
-      });
-    }
-  }
   // 获取全服房间内游戏数据
   getRoomInfo(uid) {
     let info: any = {
