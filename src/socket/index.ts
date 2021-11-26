@@ -214,11 +214,15 @@ export default class socketManager {
         let { flag, isMatch, type, lp, matchId, roomId } = data;
         if (flag) {
           if (roomCtr) {
-            this.sendErrByUidList([userCtr.uid], PROTOCLE.CLIENT.MATCH, {
-              msg: "已经处于游戏中，无法匹配"
-            });
-            console.warn("已经处于游戏中，无法匹配");
-            return;
+            if (roomCtr.isStarted) {
+              this.sendErrByUidList([userCtr.uid], PROTOCLE.CLIENT.MATCH, {
+                msg: "已经处于游戏中，无法匹配"
+              });
+              console.warn("已经处于游戏中，无法匹配");
+              return;
+            } else {
+              roomCtr.leave(uid)
+            }
           }
           let targetRoom: RoomManager;
           targetRoom = this.getRoomCanJoin({ type, lp, isMatch, matchId, roomId });
@@ -282,18 +286,19 @@ export default class socketManager {
   }
   static onDisconnect(socket) {
     // 通过socket反查用户，将用户数据标记为断线
-    // for (let uid in this.userSockets) {
-    //   if (this.userSockets[uid] == socket) {
-    //     // 踢出用户
-    //     let userCtr = this.getUserCtrById(uid);
-    //     let roomId = userCtr.inRoomId;
-    //     let roomCtr = this.getRoomCtrByRoomId(roomId);
-    //     if (roomCtr && !roomCtr.isStarted) {
-    //       roomCtr.leave(uid);
-    //       userCtr.inRoomId = 0;
-    //     }
-    //   }
-    // }
+    for (let uid in this.userSockets) {
+      if (this.userSockets[uid] == socket) {
+        console.log('用户掉线')
+        // 踢出用户
+        let userCtr = this.getUserCtrById(uid);
+        let roomId = userCtr.inRoomId;
+        let roomCtr = this.getRoomCtrByRoomId(roomId);
+        if (roomCtr && !roomCtr.isStarted) {
+          roomCtr.leave(uid);
+          userCtr.inRoomId = 0;
+        }
+      }
+    }
   }
   static onConnect(socket) {
     socket.on("message", res => {
