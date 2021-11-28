@@ -29,7 +29,7 @@ export default class socketManager {
         roomCtr.lp === lp &&
         roomCtr.matchId === matchId &&
         roomCtr.isMatch === isMatch &&
-        roomCtr.roomId === roomId &&
+        (roomId ? roomCtr.roomId === roomId : true) &&
         roomCtr.isPublic &&
         roomCtr.uidList.length < (isMatch ? MATCH_NEED : 2) &&
         !roomCtr.isStarted
