@@ -149,7 +149,6 @@ export default class socketManager {
   }
   static listen() {
     this.io.on("connect", this.onConnect);
-    this.io.on("disconnect", this.onDisconnect);
   }
   static getRoomCtrByRoomId(roomId): RoomManager {
     return this.aliveRoomList.find(roomCtr => roomCtr.roomId == roomId);
@@ -288,7 +287,7 @@ export default class socketManager {
     // 通过socket反查用户，将用户数据标记为断线
     for (let uid in this.userSockets) {
       if (this.userSockets[uid] == socket) {
-        console.log('用户掉线')
+        console.log('用户uid掉线,取消匹配')
         // 踢出用户
         let userCtr = this.getUserCtrById(uid);
         let roomId = userCtr.inRoomId;
@@ -301,6 +300,9 @@ export default class socketManager {
     }
   }
   static onConnect(socket) {
+    socket.on('disconnect', () => {
+      socketManager.onDisconnect(socket)
+    });
     socket.on("message", res => {
       console.log(this.onMessage);
       socketManager.onMessage(res, socket);
