@@ -152,7 +152,9 @@ export default class socketManager {
     this.io.on("connect", this.onConnect);
   }
   static getRoomCtrByRoomId(roomId): RoomManager {
-    return this.aliveRoomList.find(roomCtr => roomCtr.roomId == roomId);
+    if (!!roomId) {
+      return this.aliveRoomList.find(roomCtr => roomCtr.roomId == roomId);
+    }
   }
   static onMessage(res, socket) {
     console.log("收到消息", res);
