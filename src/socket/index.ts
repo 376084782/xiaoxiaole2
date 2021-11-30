@@ -29,7 +29,7 @@ export default class socketManager {
         roomCtr.lp === lp &&
         roomCtr.matchId === matchId &&
         roomCtr.isMatch === isMatch &&
-        (roomId ? roomCtr.roomId === roomId : true) &&
+        (!!roomId ? roomCtr.roomId == roomId : true) &&
         roomCtr.isPublic &&
         roomCtr.uidList.length < (isMatch ? MATCH_NEED : 2) &&
         !roomCtr.isStarted
@@ -214,11 +214,11 @@ export default class socketManager {
         let { flag, isMatch, type, lp, matchId, roomId } = data;
         if (flag) {
           if (roomCtr) {
-            if (roomCtr.isStarted) {
+            if (roomCtr.isStarted && roomCtr.roomId != 0) {
               this.sendErrByUidList([userCtr.uid], PROTOCLE.CLIENT.MATCH, {
                 msg: "已经处于游戏中，无法匹配"
               });
-              console.warn("已经处于游戏中，无法匹配");
+              console.warn("已经处于游戏中，无法匹配", roomCtr.roomId);
               return;
             } else {
               roomCtr.leave(uid)

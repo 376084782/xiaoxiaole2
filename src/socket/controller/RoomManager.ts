@@ -13,7 +13,7 @@ export default class RoomManager {
   withRobot = false;
 
   isMatch = false;
-  roomId = 1;
+  roomId = 0;
   isPublic = true;
   isStarted = false;
   // 存当前在游戏中的uid列表
@@ -229,9 +229,7 @@ export default class RoomManager {
     this.checkAfterTurn();
   }
   constructor({ isMatch, type, lp, matchId, roomId }) {
-    console.log(roomId,'isMatchisMatch')
     this.withRobot = !roomId && matchId == 0 && !isMatch;
-    console.log(!roomId , matchId == 0 , !isMatch,this.withRobot);
     this.isMatch = isMatch;
     this.type = type;
     this.matchId = matchId;
@@ -269,6 +267,7 @@ export default class RoomManager {
   timerRobotIn;
   // 玩家加入
   join({ uid, propId, matchId, type, lp }) {
+    console.log(this.withRobot,'this.withRobot')
     if (this.isStarted) {
       return;
     }
