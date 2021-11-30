@@ -229,12 +229,14 @@ export default class RoomManager {
     this.checkAfterTurn();
   }
   constructor({ isMatch, type, lp, matchId, roomId }) {
-    this.withRobot = !roomId && matchId == 0 && !isMatch
+    console.log(roomId,'isMatchisMatch')
+    this.withRobot = !roomId && matchId == 0 && !isMatch;
+    console.log(!roomId , matchId == 0 , !isMatch,this.withRobot);
     this.isMatch = isMatch;
     this.type = type;
     this.matchId = matchId;
     this.lp = lp;
-    this.roomId = roomId ? roomId :'a'+ Util.getUniqId();
+    this.roomId = roomId ? roomId : 'a' + Util.getUniqId();
   }
   askShuffle(uid) {
     let gameCtr = this.getGameCtr(uid);
