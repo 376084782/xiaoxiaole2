@@ -23,13 +23,14 @@ export default class socketManager {
   static aliveRoomList: RoomManager[] = [];
   static getRoomCanJoin({ type, lp, roomId, matchId, isMatch = false }): RoomManager {
     // 检查当前已存在的房间中 公开的，人未满的,未开始游戏的
+    let withRobot = !roomId && matchId == 0 && !isMatch;
     let list = this.aliveRoomList.filter((roomCtr: RoomManager) => {
       return (
         roomCtr.type === type &&
         roomCtr.lp === lp &&
         roomCtr.matchId === matchId &&
         roomCtr.isMatch === isMatch &&
-        (!!roomId ? roomCtr.roomId == roomId : true) &&
+        (!!roomId ? roomCtr.roomId == roomId : withRobot == roomCtr.withRobot) &&
         roomCtr.isPublic &&
         roomCtr.uidList.length < (isMatch ? MATCH_NEED : 2) &&
         !roomCtr.isStarted
@@ -42,6 +43,10 @@ export default class socketManager {
     } else {
       return list[0];
     }
+  }
+  static removeRoom(room: RoomManager) {
+    this.aliveRoomList = this.aliveRoomList.filter((ctr: RoomManager) => ctr != room);
+    console.log('当前房间数量',this.aliveRoomList.length)
   }
   // 公共错误广播
   static sendErrByUidList(uidList: number[], protocle: string, data) {

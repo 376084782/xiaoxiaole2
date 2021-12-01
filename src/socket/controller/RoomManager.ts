@@ -7,6 +7,8 @@ import { MATCH_NEED, PROP_LIST } from "../config";
 import RobotManager from "./RobotManager";
 // 游戏内玩家全部离线的房间，自动清除
 export default class RoomManager {
+  isAlive = true;
+
   type = 0;
   lp = 0;
   matchId = 0;
@@ -54,7 +56,7 @@ export default class RoomManager {
     let orderWinner = this.getOrderByUid(uidWinner);
     let orderLoser = this.getOrderByUid(uidLoser);
     this.waitingList.push(uidWinner);
-
+    socketManager.removeRoom(this);
     if (this.isMatch) {
       this.checkAfterTurn();
       // 将胜利者塞到下一轮的待定组
@@ -267,7 +269,7 @@ export default class RoomManager {
   timerRobotIn;
   // 玩家加入
   join({ uid, propId, matchId, type, lp }) {
-    console.log(this.withRobot,'this.withRobot')
+    console.log(this.withRobot, 'this.withRobot')
     if (this.isStarted) {
       return;
     }
