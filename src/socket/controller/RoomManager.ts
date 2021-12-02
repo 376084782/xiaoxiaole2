@@ -56,16 +56,14 @@ export default class RoomManager {
     let orderWinner = this.getOrderByUid(uidWinner);
     let orderLoser = this.getOrderByUid(uidLoser);
     this.waitingList.push(uidWinner);
-    socketManager.removeRoom(this);
     if (this.isMatch) {
       this.checkAfterTurn();
       // 将胜利者塞到下一轮的待定组
 
-      let userCtr = socketManager.getUserCtrById(uidLoser);
-      userCtr.inRoomId = 0;
 
       // 检查当前轮次 是否所有队伍完成pk，完成了进入下一轮
       if (this.rankRound >= 3) {
+        socketManager.removeRoom(this);
         console.log("最后一场比赛");
         console.log("上报游戏结果", {
           rank: 1,
@@ -159,7 +157,12 @@ export default class RoomManager {
           }
         }, 10000);
       }
+      
+      let userCtr = socketManager.getUserCtrById(uidLoser);
+      userCtr.inRoomId = 0;
+      this.leave(uidLoser)
     } else {
+      socketManager.removeRoom(this);
       // 上报游戏结果
       console.log("上报游戏结果", {
         rank: 1,
@@ -190,6 +193,7 @@ export default class RoomManager {
         });
       }
       this.isStarted = false;
+
     }
   }
   waitingList = [];
@@ -269,7 +273,6 @@ export default class RoomManager {
   timerRobotIn;
   // 玩家加入
   join({ uid, propId, matchId, type, lp }, autoAdd = true) {
-    console.log(this.withRobot, 'this.withRobot')
     if (this.isStarted) {
       return;
     }
@@ -364,13 +367,13 @@ export default class RoomManager {
     // 房间内的人都扣除对应的道具
     this.doPay()
       .then(e => {
-        this.isStarted = true;
         this.waitingList = this.uidList;
         this.goNextRankRound();
       })
       .catch(e => {
         socketManager.sendErrByUidList(this.uidList, "startGame", { msg: e });
         this.isStarted = false;
+
         this.uidList.forEach(uid => {
           this.leave(uid);
           let ctrUser = socketManager.getUserCtrById(uid);
@@ -432,6 +435,7 @@ export default class RoomManager {
   }
   doStartGame() {
     this.isStarted = true;
+
     this.doPay()
       .then(e => {
         // 显示匹配成功动画
@@ -473,6 +477,7 @@ export default class RoomManager {
       })
       .catch(e => {
         this.isStarted = false;
+
         socketManager.sendErrByUidList(this.uidList, "startGame", {
           msg: e
         });
