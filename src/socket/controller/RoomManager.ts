@@ -280,14 +280,16 @@ export default class RoomManager {
       lp
     };
     if (this.isMatch) {
-      for (let i = 0; i < 6; i++) {
-        this.join({
-          uid: 10000000000000 + Util.getRandomInt(0, RobotManager.listName.length - 1),
-          matchId,
-          type,
-          lp,
-          propId: Util.getRandomInt(1, 6)
-        });
+      if (this.uidList.length == 0) {
+        for (let i = 0; i < 6; i++) {
+          this.join({
+            uid: 10000000000000 + Util.getRandomInt(0, RobotManager.listName.length - 1),
+            matchId,
+            type,
+            lp,
+            propId: Util.getRandomInt(1, 6)
+          });
+        }
       }
       this.uidList.push(uid);
       this.waitingList = this.uidList;
