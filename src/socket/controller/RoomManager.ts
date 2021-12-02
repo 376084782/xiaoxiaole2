@@ -268,7 +268,7 @@ export default class RoomManager {
   }
   timerRobotIn;
   // 玩家加入
-  join({ uid, propId, matchId, type, lp }) {
+  join({ uid, propId, matchId, type, lp }, autoAdd = true) {
     console.log(this.withRobot, 'this.withRobot')
     if (this.isStarted) {
       return;
@@ -280,7 +280,7 @@ export default class RoomManager {
       lp
     };
     if (this.isMatch) {
-      if (this.uidList.length == 0) {
+      if (autoAdd && this.uidList.length == 0) {
         for (let i = 0; i < 6; i++) {
           this.join({
             uid: 10000000000000 + Util.getRandomInt(0, RobotManager.listName.length - 1),
@@ -288,7 +288,7 @@ export default class RoomManager {
             type,
             lp,
             propId: Util.getRandomInt(1, 6)
-          });
+          }, false);
         }
       }
       this.uidList.push(uid);
