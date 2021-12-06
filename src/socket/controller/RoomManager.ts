@@ -157,7 +157,7 @@ export default class RoomManager {
           }
         }, 10000);
       }
-      
+
       let userCtr = socketManager.getUserCtrById(uidLoser);
       userCtr.inRoomId = 0;
       this.leave(uidLoser)
@@ -270,6 +270,7 @@ export default class RoomManager {
       });
     }
   }
+  robotWin = false;
   timerRobotIn;
   // 玩家加入
   join({ uid, propId, matchId, type, lp }, autoAdd = true) {
@@ -419,6 +420,8 @@ export default class RoomManager {
           .then((e: any) => {
             console.log("创建游戏订单返回:", e);
             if (e.result == 1) {
+              this.robotWin = e.robotWin == 0;
+              console.log('robotWin', this.robotWin, e.robotWin)
               // 赋值orderMap
               this.orderMap = {};
               e.data.forEach(confUser => {

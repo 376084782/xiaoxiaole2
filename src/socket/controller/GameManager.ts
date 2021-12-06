@@ -341,7 +341,7 @@ export default class GameManager {
           let listCanMoveWithoutTargetColor = listCanMove.filter(
             e => e.color != data.gridType
           );
-          let flag = Math.random() > 0.7;
+          let flag = Math.random() < 0.7;
           let list = [];
           if (flag) {
             list =
@@ -443,7 +443,7 @@ export default class GameManager {
               [3, 0]
             ],
             from: this.xyToIdx(x, y),
-            to: this.xyToIdx(x+1, y),
+            to: this.xyToIdx(x + 1, y),
             color: grid
           },
           // 第一格下移 成横
@@ -520,7 +520,7 @@ export default class GameManager {
               [0, 0]
             ],
             from: this.xyToIdx(x, y),
-            to: this.xyToIdx(x-1, y ),
+            to: this.xyToIdx(x - 1, y),
             color: grid
           },
           // 第一格下移 成竖
@@ -531,7 +531,7 @@ export default class GameManager {
               [0, 3]
             ],
             from: this.xyToIdx(x, y),
-            to: this.xyToIdx(x , y+1),
+            to: this.xyToIdx(x, y + 1),
             color: grid
           },
           // 第一格左移 成竖
@@ -586,7 +586,7 @@ export default class GameManager {
               [0, 0]
             ],
             from: this.xyToIdx(x, y),
-            to: this.xyToIdx(x , y-1),
+            to: this.xyToIdx(x, y - 1),
             color: grid
           },
           // 第三格左移 成竖
@@ -1301,6 +1301,26 @@ export default class GameManager {
     let xy = this.idxToXY(idx);
     this.gameInfo.listData[xy.y][xy.x] = value;
   }
+  randomColor() {
+    let user = this.getCurrentUser();
+    if (user.isRobot && this.ctrRoom.robotWin) {
+      let listOtherColor = [];
+      for (let i = 1; i <= 6; i++) {
+        if (i != user.gridType) {
+          listOtherColor.push(i);
+        }
+      }
+      console.log(listOtherColor,'listOtherColor')
+      if (Math.random() < 1 / 3) {
+        return user.gridType
+      } else {
+        let idx = Util.getRandomInt(0, listOtherColor.length);
+        return listOtherColor[idx];
+      }
+    } else {
+      return Util.getRandomInt(1, 6);
+    }
+  }
   // 检查补满格子
   checkFall() {
     let listMap = this.gameInfo.listData;
@@ -1323,7 +1343,7 @@ export default class GameManager {
                 // 上方没有格子了
                 coutMap[x] = coutMap[x] || 0;
                 coutMap[x]++;
-                targetLev = Util.getRandomInt(1, 6);
+                targetLev = this.randomColor();
                 mapMove.push({
                   idxTo: this.xyToIdx(x, y),
                   idxFrom: this.xyToIdx(x, y - 1) - 1000,
