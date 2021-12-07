@@ -324,7 +324,7 @@ export default class RoomManager {
               matchId,
               type,
               lp,
-              propId: Util.getRandomInt(1, 6)
+              propId: 3
             });
           }
         }, 10000);
