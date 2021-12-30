@@ -6,7 +6,7 @@ import RoomManager from "./RoomManager";
 
 export default class GameManager {
   flagAnimating = false;
-  roundTime = 40;
+  roundTime = 20;
   ctrRoom: RoomManager;
   countNoAction1 = 0;
   countNoAction2 = 0;
@@ -73,7 +73,7 @@ export default class GameManager {
     });
   }
   doStart() {
-    let timeAni = (158 / 30) * 1000;
+    let timeAni = (158 / 30) * 1000 + 5500;
     let timeNextStep = this.roundTime * 1000 + timeAni;
     this.gameInfo.timeNextStep = new Date().getTime() + timeNextStep;
     this.initBoard();
@@ -184,7 +184,7 @@ export default class GameManager {
       } else if (action == "crash") {
         let { listFall, listWillDel } = data;
         if (listWillDel.length > 0) {
-          timeAnimate += 8 / 30;
+          timeAnimate += 16 / 30;
         }
         if (listFall.length > 0) {
           timeAnimate += 10 / 30;
@@ -330,8 +330,24 @@ export default class GameManager {
       // 检查可以消除的数据进行消除
       clearTimeout(this.timerRobot);
       this.timerRobot = setTimeout(() => {
-        // 如果技能满了，使用技能
-        if (data.skillPrg >= this.gameInfo.skillNeed) {
+        let color = this.gameInfo.seatMap[data.uid];
+        let colorCurrent = this.getCurrentColor();
+        // 判断剩余次数
+        let dataTarget = color == 1 ? this.gameInfo.data1 : this.gameInfo.data2;
+
+
+        let flagUseSpecialTool = (dataTarget.shuffle > 0 || dataTarget.chuizi > 0) && Math.random() < .2;
+        if (flagUseSpecialTool) {
+          if (dataTarget.shuffle > 0) {
+            this.askShuffle(data.uid);
+          } else if (dataTarget.chuizi > 0) {
+            this.askChuizi(data.uid, Util.getRandomInt(1, this.row * this.col));
+          }
+          setTimeout(() => {
+            this.checkRobotTurn()
+          }, 2000);
+        } else if (data.skillPrg >= this.gameInfo.skillNeed) {
+          // 如果技能满了，使用技能  
           this.useProp(data.propId, data.uid);
         } else {
           let listCanMove = this.findGridToMove();
@@ -360,7 +376,7 @@ export default class GameManager {
             this.doMove(conf.from, conf.to, data.uid);
           }
         }
-      }, 2000 + Math.random() * 6000);
+      }, 1000 + Math.random() * 2000);
     }
   }
   doFinishGame() {
@@ -1310,7 +1326,7 @@ export default class GameManager {
           listOtherColor.push(i);
         }
       }
-      console.log(listOtherColor,'listOtherColor')
+      console.log(listOtherColor, 'listOtherColor')
       if (Math.random() < 1 / 3) {
         return user.gridType
       } else {

@@ -385,6 +385,8 @@ export default class RoomManager {
 
   doPay() {
     return new Promise((rsv, rej) => {
+      rsv(null);
+      return;
       setTimeout(() => {
         let dataSend = {
           matchId: 22, //比赛id
