@@ -398,18 +398,18 @@ export default class RoomManager {
           let propId = this.propMap[uid];
           let startData = this.matchDataMap[uid];
           let propConf = PROP_LIST.find(conf => conf.id == propId);
-          if (uid < 10000000000000) {
-            dataSend.users.push({
-              djmoney: propConf.cost,
-              dj: propConf.name,
-              userId: uid
-            });
-            Object.assign(dataSend, {
-              matchId: startData.matchId,
-              type: "" + startData.type,
-              lp: startData.lp
-            });
-          }
+          dataSend.users.push({
+            djmoney: propConf.cost,
+            dj: propConf.name,
+            userId: uid,
+            isRobot: uid >= 10000000000000
+          });
+          Object.assign(dataSend, {
+            matchId: startData.matchId,
+            type: "" + startData.type,
+            lp: startData.lp
+          });
+
         });
         console.log("=======请求开始游戏======", dataSend);
         socketManager
