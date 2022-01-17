@@ -1326,7 +1326,6 @@ export default class GameManager {
           listOtherColor.push(i);
         }
       }
-      console.log(listOtherColor, 'listOtherColor')
       if (Math.random() < 1 / 3) {
         return user.gridType
       } else {

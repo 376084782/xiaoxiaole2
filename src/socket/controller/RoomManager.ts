@@ -392,7 +392,8 @@ export default class RoomManager {
           matchId: 22, //比赛id
           type: 3, //比赛类型，1竞技场双人对战 2竞技场锦标赛 3欢乐场双人对战 4欢乐场锦标赛 5训练场双人对战 6训练场锦标赛
           lp: 10000, //令牌数量
-          users: []
+          users: [],
+          roomId: this.roomId
         };
         this.uidList.forEach(uid => {
           let propId = this.propMap[uid];
@@ -411,7 +412,7 @@ export default class RoomManager {
           });
 
         });
-        console.log("=======请求开始游戏======", dataSend);
+        console.log("=======请求开始游戏======", JSON.stringify(dataSend));
         socketManager
           .doAjax({
             url: "/batchstart",
@@ -434,7 +435,9 @@ export default class RoomManager {
               // 错误
               rej(e.msg);
             }
-          });
+          }).catch(e => {
+            rej('网络错误');
+          })
       }, 1000);
     });
   }

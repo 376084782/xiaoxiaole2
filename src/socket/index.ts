@@ -68,7 +68,7 @@ export default class socketManager {
   }
   static doAjax({ url = "", data = {}, method = "get", noMd5 = false }) {
     method = method.toUpperCase();
-    let host = "https://sbzfront.test.pingchuanwangluo.cn";
+    let host = "https://sbzfront.test.pingchuanwangluo.cn/api/out/xxl";
     // let host = "https://gongzhong.surbunjew.com/api/out/xxl";
     if (url.indexOf("http") == -1) {
       url = host + url;
@@ -89,6 +89,14 @@ export default class socketManager {
         objStr = this.generateData(data);
         headers["Content-Type"] = "text/plain; charset=UTF-8";
       }
+      console.log({
+        url: url,
+        type: method,
+        xhrFields: {
+          withCredentials: false
+        },
+        headers,
+        data: objStr,})
       $.ajax({
         url: url,
         type: method,
@@ -99,7 +107,11 @@ export default class socketManager {
         data: objStr,
         success(result) {
           rsv(result);
-        }
+        },
+        error(e1,e2,e3){
+          console.log('errrrr???',e1,e2,e3)
+          rej(arguments)
+        },
       });
     });
   }
