@@ -89,14 +89,6 @@ export default class socketManager {
         objStr = this.generateData(data);
         headers["Content-Type"] = "text/plain; charset=UTF-8";
       }
-      console.log({
-        url: url,
-        type: method,
-        xhrFields: {
-          withCredentials: false
-        },
-        headers,
-        data: objStr,})
       $.ajax({
         url: url,
         type: method,
@@ -109,7 +101,6 @@ export default class socketManager {
           rsv(result);
         },
         error(e1,e2,e3){
-          console.log('errrrr???',e1,e2,e3)
           rej(arguments)
         },
       });
@@ -324,7 +315,6 @@ export default class socketManager {
       socketManager.onDisconnect(socket)
     });
     socket.on("message", res => {
-      console.log(this.onMessage);
       socketManager.onMessage(res, socket);
     });
   }
