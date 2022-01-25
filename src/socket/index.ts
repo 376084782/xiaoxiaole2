@@ -68,8 +68,8 @@ export default class socketManager {
   }
   static doAjax({ url = "", data = {}, method = "get", noMd5 = false }) {
     method = method.toUpperCase();
-    let host = "https://sbzfront.test.pingchuanwangluo.cn/api/out/xxl";
-    // let host = "https://gongzhong.surbunjew.com/api/out/xxl";
+    // let host = "https://sbzfront.test.pingchuanwangluo.cn/api/out/xxl";
+    let host = "https://gongzhong.surbunjew.com/api/out/xxl";
     if (url.indexOf("http") == -1) {
       url = host + url;
     }
