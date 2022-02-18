@@ -234,8 +234,8 @@ export default class RoomManager {
     }
     this.checkAfterTurn();
   }
-  constructor({ isMatch, type, lp, matchId, roomId }) {
-    this.withRobot = !roomId && matchId == 0 && !isMatch;
+  constructor({ isMatch, type, lp, matchId, roomId, withRobot }) {
+    this.withRobot = !!withRobot;
     this.isMatch = isMatch;
     this.type = type;
     this.matchId = matchId;

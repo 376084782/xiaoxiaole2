@@ -21,9 +21,9 @@ export default class socketManager {
   static userSockets = {};
   static userMap: UserManager[] = [];
   static aliveRoomList: RoomManager[] = [];
-  static getRoomCanJoin({ type, lp, roomId, matchId, isMatch = false }): RoomManager {
+  static getRoomCanJoin({ type, lp, roomId, matchId, isMatch = false, withRobot }): RoomManager {
     // 检查当前已存在的房间中 公开的，人未满的,未开始游戏的
-    let withRobot = !roomId && matchId == 0 && !isMatch;
+    withRobot = (!roomId && matchId == 0 && !isMatch) || !!withRobot;
     let list = this.aliveRoomList.filter((roomCtr: RoomManager) => {
       return (
         roomCtr.type === type &&
@@ -37,7 +37,7 @@ export default class socketManager {
       );
     });
     if (list.length == 0) {
-      let roomNew = new RoomManager({ isMatch, type, lp, matchId, roomId });
+      let roomNew = new RoomManager({ isMatch, type, lp, matchId, roomId, withRobot });
       this.aliveRoomList.push(roomNew);
       return roomNew;
     } else {
@@ -46,7 +46,7 @@ export default class socketManager {
   }
   static removeRoom(room: RoomManager) {
     this.aliveRoomList = this.aliveRoomList.filter((ctr: RoomManager) => ctr != room);
-    console.log('当前房间数量',this.aliveRoomList.length)
+    console.log('当前房间数量', this.aliveRoomList.length)
   }
   // 公共错误广播
   static sendErrByUidList(uidList: number[], protocle: string, data) {
@@ -100,7 +100,7 @@ export default class socketManager {
         success(result) {
           rsv(result);
         },
-        error(e1,e2,e3){
+        error(e1, e2, e3) {
           rej(arguments)
         },
       });
@@ -221,7 +221,7 @@ export default class socketManager {
       }
       case PROTOCLE.CLIENT.MATCH: {
         // 参与或者取消匹配
-        let { flag, isMatch, type, lp, matchId, roomId } = data;
+        let { flag, isMatch, type, lp, matchId, roomId, withRobot } = data;
         if (flag) {
           if (roomCtr) {
             if (roomCtr.isStarted && roomCtr.roomId != 0) {
@@ -235,7 +235,7 @@ export default class socketManager {
             }
           }
           let targetRoom: RoomManager;
-          targetRoom = this.getRoomCanJoin({ type, lp, isMatch, matchId, roomId });
+          targetRoom = this.getRoomCanJoin({ type, lp, isMatch, matchId, roomId, withRobot });
 
           targetRoom.join({
             uid,
